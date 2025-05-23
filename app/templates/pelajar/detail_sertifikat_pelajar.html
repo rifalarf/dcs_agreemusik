@@ -10,6 +10,13 @@
             <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar Sertifikat
         </a>
     </div>
+    <div class="flex justify-between items-center mb-6 pb-4">
+    {% if sertifikat.signature_hash %}
+    <a href="{{ url_for('pelajar.cetak_sertifikat_pelajar', sertifikat_id=sertifikat.id) }}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm" target="_blank">
+        <i class="fas fa-download mr-1"></i>Unduh Sertifikat
+    </a>
+    {% endif %}
+</div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
         <div>

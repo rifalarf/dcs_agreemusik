@@ -28,7 +28,7 @@ def register():
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('main.index')) # Arahkan ke Home
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
@@ -36,10 +36,8 @@ def login():
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             flash(f'Login berhasil. Selamat datang, {user.nama_lengkap}!', 'success')
-            if user.is_admin:
-                return redirect(next_page or url_for('admin.dashboard'))
-            else: # Pelajar
-                return redirect(next_page or url_for('pelajar.dashboard'))
+            # Redirect ke Home, yang akan menampilkan dashboard yang sesuai
+            return redirect(next_page or url_for('main.index'))
         else:
             flash('Login gagal. Periksa kembali username dan password Anda.', 'danger')
     return render_template('auth/login.html', title='Login', form=form)
@@ -49,4 +47,4 @@ def login():
 def logout():
     logout_user()
     flash('Anda telah berhasil logout.', 'info')
-    return redirect(url_for('main.index'))
+    return redirect(url_for('main.index')) # Arahkan ke Home

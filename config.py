@@ -17,3 +17,6 @@ class Config:
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'admin123'
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@example.com'
     ADMIN_NAMA_LENGKAP = 'Administrator Sistem'
+
+    CERTIFICATE_TEMPLATE_PATH = os.path.join(basedir, "app", "static", "images", "template.png")
+    FONT_BASE_PATH = os.path.join(basedir, "app", "static", "fonts")

@@ -4,8 +4,11 @@ from .decorators import admin_required
 from .forms import PelajarForm, SertifikatForm
 from .models import User, Sertifikat
 from . import db
-from .utils_crypto import load_private_key, generate_qr_code_from_signature_text
+from .utils_crypto import load_private_key, generate_qr_code_with_details # Ubah import
 from werkzeug.security import generate_password_hash
+from flask import send_file # Tambahkan ini
+from .utils_certificate import generate_certificate_image # Tambahkan ini
+import io # Tambahkan ini
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -111,27 +114,46 @@ def manage_sertifikat():
 @login_required
 @admin_required
 def tambah_sertifikat():
-    form = SertifikatForm()
+    form = SertifikatForm() # Form akan menginisialisasi choices-nya sendiri
+
     if form.validate_on_submit():
+        # ... (logika POST tetap sama) ...
         private_key_obj = load_private_key(current_app.config['PRIVATE_KEY_PATH'])
         if not private_key_obj:
             flash('Gagal memuat kunci privat. Proses signing tidak dapat dilanjutkan.', 'danger')
+            # Penting: Saat render ulang, form sudah memiliki choices yang benar
+            return render_template('admin/form_sertifikat.html', title='Tambah Sertifikat', form=form, legend='Tambah Sertifikat Baru')
+
+        user_penerima = User.query.get(int(form.user_id.data))
+        if not user_penerima:
+            flash(f"Pelajar dengan ID {form.user_id.data} tidak ditemukan.", 'danger')
             return render_template('admin/form_sertifikat.html', title='Tambah Sertifikat', form=form, legend='Tambah Sertifikat Baru')
 
         sertifikat = Sertifikat(
-            user_id=form.user_id.data,
+            pemilik=user_penerima,
             nomor_sertifikat=form.nomor_sertifikat.data,
             nama_kompetensi=form.nama_kompetensi.data,
             tanggal_terbit=form.tanggal_terbit.data,
             nama_lembaga_penerbit=form.nama_lembaga_penerbit.data
         )
-        # Proses signing
+        
         sertifikat.prepare_and_sign(current_app.config, private_key_obj)
         
         db.session.add(sertifikat)
         db.session.commit()
         flash(f'Sertifikat {sertifikat.nomor_sertifikat} berhasil ditambahkan dan ditandatangani.', 'success')
         return redirect(url_for('admin.manage_sertifikat'))
+    
+    # Bagian ini tidak lagi diperlukan jika __init__ form sudah benar:
+    # elif request.method == 'GET' or not form.validate(): # Atau jika validasi gagal
+    #     # Pastikan choices di-populate untuk render awal atau render ulang
+    #     pelajar_choices_init = [(u.id, u.nama_lengkap) for u in User.query.filter_by(role='pelajar').order_by(User.nama_lengkap).all()]
+    #     if not pelajar_choices_init:
+    #         form.user_id.choices = [(0, "Tidak ada pelajar tersedia")] # Ini masih akan error jika DataRequired
+    #     else:
+    #         form.user_id.choices = pelajar_choices_init
+
+
     return render_template('admin/form_sertifikat.html', title='Tambah Sertifikat', form=form, legend='Tambah Sertifikat Baru')
 
 @admin_bp.route('/sertifikat/edit/<int:sertifikat_id>', methods=['GET', 'POST'])
@@ -186,6 +208,33 @@ def hapus_sertifikat(sertifikat_id):
 def detail_sertifikat_admin(sertifikat_id):
     sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
     qr_code_img_b64 = None
-    if sertifikat.signature_hash:
-        qr_code_img_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
+    if sertifikat.signature_hash and sertifikat.nomor_sertifikat:
+        # Gunakan fungsi baru
+        qr_code_img_b64 = generate_qr_code_with_details(sertifikat.nomor_sertifikat, sertifikat.signature_hash)
     return render_template('admin/detail_sertifikat_admin.html', title=f'Detail Sertifikat {sertifikat.nomor_sertifikat}', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
+
+@admin_bp.route('/sertifikat/cetak/<int:sertifikat_id>')
+@login_required
+@admin_required
+def cetak_sertifikat_admin(sertifikat_id):
+    sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
+    
+    if not sertifikat.signature_hash: # Atau kondisi lain jika sertifikat belum siap dicetak
+        flash('Sertifikat ini belum ditandatangani sepenuhnya dan tidak bisa dicetak.', 'warning')
+        return redirect(url_for('admin.detail_sertifikat_admin', sertifikat_id=sertifikat.id))
+
+    img_pil = generate_certificate_image(sertifikat)
+    if img_pil is None:
+        flash('Gagal membuat gambar sertifikat. Periksa log server.', 'danger')
+        return redirect(url_for('admin.detail_sertifikat_admin', sertifikat_id=sertifikat.id))
+
+    img_io = io.BytesIO()
+    img_pil.save(img_io, 'PNG')
+    img_io.seek(0)
+    
+    return send_file(
+        img_io,
+        mimetype='image/png',
+        as_attachment=True,
+        download_name=f'Sertifikat_{sertifikat.nomor_sertifikat.replace("/", "-")}_{sertifikat.pemilik.nama_lengkap.replace(" ", "_")}.png'
+    )
