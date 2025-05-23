@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% from "includes/_macros.html" import render_field %} {# UBAH INI #}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg mt-10">
+    <h2 class="text-2xl font-bold text-center text-indigo-600 mb-8">{{ title }}</h2>
+    <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+        {{ form.hidden_tag() }} {# CSRF token #}
+        
+        {{ render_field(form.username, placeholder="Masukkan username Anda") }}
+        {{ render_field(form.password, placeholder="Masukkan password Anda", type="password") }}
+        
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center">
+                {{ form.remember_me(class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded") }}
+                {{ form.remember_me.label(class="ml-2 block text-sm text-gray-900") }}
+            </div>
+            <!-- <div class="text-sm">
+                <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
+                    Lupa password?
+                </a>
+            </div> -->
+        </div>
+        
+        <div>
+            {{ form.submit(class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer") }}
+        </div>
+    </form>
+    <p class="mt-6 text-center text-sm text-gray-600">
+        Belum punya akun?
+        <a href="{{ url_for('auth.register') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
+            Daftar sebagai Pelajar
+        </a>
+    </p>
+</div>
+{% endblock %}

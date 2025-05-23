@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ title }} - Pelajar{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 md:p-8 rounded-lg shadow-xl">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-3xl font-bold text-indigo-700">{{ title }}</h1>
+        <a href="{{ url_for('pelajar.dashboard') }}" class="text-indigo-600 hover:text-indigo-800 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Kembali ke Dashboard
+        </a>
+    </div>
+
+    {% if sertifikats %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-300">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">No. Sertifikat</th>
+                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Nama Kompetensi</th>
+                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Tgl Terbit</th>
+                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-700">Lembaga</th>
+                    <th class="py-3 px-4 border-b text-center text-sm font-semibold text-gray-700">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sertifikat in sertifikats %}
+                <tr class="hover:bg-gray-50 transition duration-150">
+                    <td class="py-3 px-4 border-b text-sm text-gray-700">{{ sertifikat.nomor_sertifikat }}</td>
+                    <td class="py-3 px-4 border-b text-sm text-gray-700">{{ sertifikat.nama_kompetensi }}</td>
+                    <td class="py-3 px-4 border-b text-sm text-gray-700">{{ sertifikat.tanggal_terbit.strftime('%d %b %Y') }}</td>
+                    <td class="py-3 px-4 border-b text-sm text-gray-700">{{ sertifikat.nama_lembaga_penerbit }}</td>
+                    <td class="py-3 px-4 border-b text-sm text-center">
+                        <a href="{{ url_for('pelajar.detail_sertifikat_pelajar', sertifikat_id=sertifikat.id) }}" class="text-blue-600 hover:text-blue-900" title="Lihat Detail & QR">
+                            <i class="fas fa-eye mr-1"></i> Lihat Detail
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-10">
+        <i class="fas fa-folder-open fa-3x text-gray-400 mb-3"></i>
+        <p class="text-gray-500 text-lg">Anda belum memiliki sertifikat kompetensi.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}Admin Dashboard - Sertifikat Digital{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 md:p-8 rounded-lg shadow-xl">
+    <h1 class="text-3xl font-bold text-indigo-700 mb-6 border-b pb-4">Admin Dashboard</h1>
+    <p class="text-lg text-gray-700 mb-8">Selamat datang, {{ current_user.nama_lengkap }}! Dari sini Anda dapat mengelola data pelajar dan sertifikat kompetensi.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <a href="{{ url_for('admin.manage_pelajar') }}" class="block p-6 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
+            <div class="flex items-center">
+                <i class="fas fa-users fa-3x mr-4"></i>
+                <div>
+                    <h2 class="text-2xl font-semibold">Manajemen Pelajar</h2>
+                    <p class="text-sm">Tambah, edit, atau hapus data pelajar.</p>
+                </div>
+            </div>
+        </a>
+        <a href="{{ url_for('admin.manage_sertifikat') }}" class="block p-6 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
+            <div class="flex items-center">
+                <i class="fas fa-award fa-3x mr-4"></i>
+                <div>
+                    <h2 class="text-2xl font-semibold">Manajemen Sertifikat</h2>
+                    <p class="text-sm">Buat, edit, hapus, dan tanda tangani sertifikat.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

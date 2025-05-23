@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% from "includes/_macros.html" import render_field %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg mt-10">
+    <h2 class="text-2xl font-bold text-center text-indigo-600 mb-8">{{ title }}</h2>
+    <form method="POST" action="{{ url_for('auth.register') }}">
+        {{ form.hidden_tag() }}
+        
+        {{ render_field(form.username, placeholder="Buat username unik") }}
+        {{ render_field(form.email, placeholder="Alamat email aktif", type="email") }}
+        {{ render_field(form.nama_lengkap, placeholder="Nama lengkap sesuai identitas") }}
+        {{ render_field(form.password, placeholder="Minimal 6 karakter", type="password") }}
+        {{ render_field(form.confirm_password, placeholder="Ketik ulang password", type="password") }}
+        
+        <div>
+            {{ form.submit(class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer") }}
+        </div>
+    </form>
+    <p class="mt-6 text-center text-sm text-gray-600">
+        Sudah punya akun?
+        <a href="{{ url_for('auth.login') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
+            Login di sini
+        </a>
+    </p>
+</div>
+{% endblock %}

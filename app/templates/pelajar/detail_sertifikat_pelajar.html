@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ title }} - Pelajar{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-xl">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-2xl md:text-3xl font-bold text-indigo-700">{{ sertifikat.nomor_sertifikat }}</h1>
+        <a href="{{ url_for('pelajar.list_sertifikat_pelajar') }}" class="text-indigo-600 hover:text-indigo-800 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar Sertifikat
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+        <div>
+            <p class="text-sm font-medium text-gray-500">Nama Kompetensi:</p>
+            <p class="text-lg text-gray-800 font-semibold">{{ sertifikat.nama_kompetensi }}</p>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Penerima Sertifikat:</p>
+            <p class="text-lg text-gray-800 font-semibold">{{ sertifikat.pemilik.nama_lengkap }}</p>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Tanggal Terbit:</p>
+            <p class="text-lg text-gray-800">{{ sertifikat.tanggal_terbit.strftime('%d %B %Y') }}</p>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Lembaga Penerbit:</p>
+            <p class="text-lg text-gray-800">{{ sertifikat.nama_lembaga_penerbit }}</p>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Status Tanda Tangan:</p>
+            {% if sertifikat.signature_hash %}
+                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    <i class="fas fa-check-circle mr-1 mt-1"></i> Terverifikasi Digital
+                </span>
+                 <p class="text-xs text-gray-500 mt-1">Ditandatangani pada: {{ sertifikat.tanggal_sign.strftime('%d %b %Y %H:%M') if sertifikat.tanggal_sign }} UTC</p>
+            {% else %}
+                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    <i class="fas fa-exclamation-triangle mr-1 mt-1"></i> Belum Ditandatangani / Proses
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if sertifikat.signature_hash and qr_code_img_b64 %}
+    <div class="mt-8 border-t pt-6">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">QR Code Tanda Tangan Digital</h2>
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div class="border p-2 inline-block bg-white shadow">
+                <img src="data:image/png;base64,{{ qr_code_img_b64 }}" alt="QR Code Tanda Tangan" class="w-48 h-48 md:w-56 md:h-56">
+            </div>
+            <div class="flex-1">
+                <label for="signature_text" class="block text-sm font-medium text-gray-500 mb-1">Isi Signature (Base64):</label>
+                <textarea id="signature_text" rows="4" readonly class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-xs focus:ring-indigo-500 focus:border-indigo-500">{{ sertifikat.signature_hash }}</textarea>
+                <button onclick="copyToClipboard('signature_text')" class="mt-2 bg-gray-500 hover:bg-gray-600 text-white text-sm py-2 px-3 rounded-md shadow-sm">
+                    <i class="fas fa-copy mr-1"></i> Salin Signature
+                </button>
+            </div>
+        </div>
+        <p class="mt-3 text-xs text-gray-500">Pindai QR Code ini atau salin teks signature untuk keperluan verifikasi oleh pihak ketiga.</p>
+    </div>
+    {% elif sertifikat.signature_hash %}
+     <div class="mt-8 border-t pt-6">
+        <p class="text-sm text-yellow-700 bg-yellow-100 p-3 rounded-md"><i class="fas fa-spinner fa-spin mr-2"></i> QR Code sedang diproses atau tidak dapat ditampilkan saat ini.</p>
+    </div>
+    {% endif %}
+    
+    <!-- Data string yang di-sign mungkin tidak perlu ditampilkan ke pelajar, kecuali untuk transparansi penuh -->
+    <!-- 
+    <div class="mt-8 border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">Data String Acuan:</h3>
+        <p class="text-sm text-gray-600 bg-gray-100 p-3 rounded-md break-all">{{ sertifikat.data_string_untuk_sign or "N/A" }}</p>
+    </div>
+    -->
+</div>
+
+<script>
+function copyToClipboard(elementId) {
+    var copyText = document.getElementById(elementId);
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'Berhasil disalin!' : 'Gagal menyalin.';
+        alert(msg);
+    } catch (err) {
+        alert('Oops, tidak bisa menyalin.');
+    }
+    window.getSelection().removeAllRanges();
+}
+</script>
+{% endblock %}
