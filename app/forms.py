@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, DateField, TextAreaField, SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
 from .models import User
+from flask_wtf.file import FileField, FileAllowed # Tambahkan ini
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -58,31 +59,51 @@ class PelajarForm(FlaskForm):
 
 
 class SertifikatForm(FlaskForm):
-    user_id = SelectField('Pelajar Penerima', coerce=int, validators=[DataRequired()])
+    user_id = SelectField('Pelajar Penerima', coerce=int, validators=[DataRequired(message="Harap pilih pelajar penerima.")])
     nomor_sertifikat = StringField('Nomor Sertifikat', validators=[DataRequired()])
     nama_kompetensi = StringField('Nama Kompetensi', validators=[DataRequired()])
     tanggal_terbit = DateField('Tanggal Terbit', format='%Y-%m-%d', validators=[DataRequired()])
     nama_lembaga_penerbit = StringField('Nama Lembaga Penerbit', validators=[DataRequired()])
     submit = SubmitField('Simpan & Tanda Tangani Sertifikat')
 
-    # Untuk mode edit
     sertifikat_id = StringField('ID Sertifikat', render_kw={'type': 'hidden'})
 
     def __init__(self, original_nomor_sertifikat=None, *args, **kwargs):
         super(SertifikatForm, self).__init__(*args, **kwargs)
         self.original_nomor_sertifikat = original_nomor_sertifikat
-        # Populate choices untuk user_id
-        self.user_id.choices = [(u.id, u.nama_lengkap) for u in User.query.filter_by(role='pelajar').order_by(User.nama_lengkap).all()]
-
+        
+        # Ambil semua pelajar yang valid
+        pelajar_choices = [(u.id, u.nama_lengkap) for u in User.query.filter_by(role='pelajar').order_by(User.nama_lengkap).all()]
+        
+        # Set choices. Jika kosong, SelectField akan kosong, dan DataRequired akan bekerja.
+        # Anda bisa menambahkan opsi "pilih" di template jika mau.
+        self.user_id.choices = pelajar_choices
+        
+        # Jika Anda ingin placeholder "-- Pilih Pelajar --" yang tidak bisa disubmit:
+        # self.user_id.choices = [('', '-- Pilih Pelajar --')] + pelajar_choices
+        # TAPI, ini akan menyebabkan error jika DataRequired ada dan coerce=int.
+        # Jadi, lebih baik DataRequired menangani jika tidak ada pilihan yang valid.
+        # Jika tidak ada pelajar, field akan kosong dan DataRequired akan muncul.
 
     def validate_nomor_sertifikat(self, nomor_sertifikat):
-        from .models import Sertifikat # Local import to avoid circular dependency
+        from .models import Sertifikat 
         if nomor_sertifikat.data != self.original_nomor_sertifikat:
             sertifikat = Sertifikat.query.filter_by(nomor_sertifikat=nomor_sertifikat.data).first()
             if sertifikat:
                 raise ValidationError('Nomor sertifikat sudah ada.')
 
+    # Tambahkan validasi untuk user_id jika choices kosong
+    def validate_user_id(self, field):
+        if not self.user_id.choices:
+             raise ValidationError("Tidak ada pelajar tersedia untuk dipilih.")
+        # Jika Anda menggunakan placeholder seperti ('', '--Pilih--') dan DataRequired,
+        # Anda mungkin perlu validasi tambahan di sini untuk memastikan nilai bukan string kosong
+        # Tapi dengan coerce=int, string kosong sudah error.
+
 class VerifyCertificateForm(FlaskForm):
-    nomor_sertifikat = StringField('Nomor Sertifikat', validators=[DataRequired()])
-    qr_content = TextAreaField('Isi QR Code (Signature Base64)', validators=[DataRequired()])
+    nomor_sertifikat = StringField('Nomor Sertifikat') # Tidak lagi DataRequired jika bisa dari QR
+    qr_content = TextAreaField('Isi QR Code (Signature Base64)') # Tidak lagi DataRequired
+    qr_file_upload = FileField('Atau Unggah Gambar QR Code', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Hanya gambar (JPG, PNG, GIF)!')
+    ])
     submit = SubmitField('Verifikasi Sertifikat')

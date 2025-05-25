@@ -110,3 +110,26 @@ def generate_qr_code_from_signature_text(b64_signature_text):
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
     return img_str
+
+def generate_qr_code_with_details(nomor_sertifikat, b64_signature_text):
+    """
+    Membuat QR code yang berisi Nomor Sertifikat dan Signature (Base64 text).
+    Mengembalikan image base64.
+    """
+    qr_data_string = f"{nomor_sertifikat}|{b64_signature_text}" # Format baru
+    
+    qr = qrcode.QRCode(
+        version=1, # Mungkin perlu dinaikkan jika data terlalu panjang
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=6,
+        border=4,
+    )
+    qr.add_data(qr_data_string)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return img_str

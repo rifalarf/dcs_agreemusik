@@ -39,17 +39,27 @@
                         </span>
                     </td>
                     <td class="py-3 px-4 border-b text-sm text-center">
-                        <a href="{{ url_for('admin.edit_pelajar', user_id=pelajar.id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        {% if pelajar.username != config.ADMIN_USERNAME %} {# Jangan biarkan admin utama dihapus #}
-                        <form action="{{ url_for('admin.hapus_pelajar', user_id=pelajar.id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pelajar {{ pelajar.nama_lengkap }} dan semua sertifikatnya? Tindakan ini tidak dapat dibatalkan.');">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="text-red-600 hover:text-red-900" title="Hapus">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </form>
-                        {% endif %}
+                        {# Bungkus aksi dalam div dengan flexbox #}
+                        <div class="flex items-center justify-center space-x-2">  {# atau space-x-3, space-x-4 sesuai selera #}
+                            <a href="{{ url_for('admin.edit_pelajar', user_id=pelajar.id) }}" 
+                               class="text-indigo-600 hover:text-indigo-900" 
+                               title="Edit">
+                                <i class="fas fa-edit fa-fw"></i> {# fa-fw untuk fixed width jika ikon berbeda lebar #}
+                            </a>
+                            {% if pelajar.username != config.ADMIN_USERNAME %}
+                            <form action="{{ url_for('admin.hapus_pelajar', user_id=pelajar.id) }}" 
+                                  method="POST" 
+                                  class="inline" {# Biarkan inline atau hapus, flex parent akan mengatur #}
+                                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus pelajar {{ pelajar.nama_lengkap }} dan semua sertifikatnya? Tindakan ini tidak dapat dibatalkan.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" 
+                                        class="text-red-600 hover:text-red-900" 
+                                        title="Hapus">
+                                    <i class="fas fa-trash-alt fa-fw"></i> {# fa-fw untuk fixed width #}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
