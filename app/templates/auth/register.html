@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% from "includes/_macros.html" import render_field %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg mt-10">
+    <h2 class="text-2xl font-bold text-center text-indigo-600 mb-8">{{ title }}</h2>
+    <form method="POST" action="{{ url_for('auth.register') }}">
+        {{ form.hidden_tag() }}
+
+        {{ render_field(form.username, placeholder="Buat username unik") }}
+        {{ render_field(form.email, placeholder="Alamat email aktif", type="email") }}
+        {{ render_field(form.nama_lengkap, placeholder="Nama lengkap sesuai identitas") }}
+
+        {# Spesialis (Ganti dari Instrumen) #}
+        <div class="mb-4">
+            {{ form.spesialis.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {# Beri ID 'spesialis_select' #}
+            {{ form.spesialis(class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md", id="spesialis_select") }}
+            {% if form.spesialis.errors %}
+                <ul class="text-red-500 text-xs mt-1">
+                {% for error in form.spesialis.errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        {# Field Kustom (Beri ID 'spesialis_custom_div') #}
+        <div id="spesialis_custom_div" class="mb-4 {% if form.spesialis.data != 'ISI_SENDIRI' %}hidden{% endif %}">
+             {{ render_field(form.spesialis_custom, placeholder="Masukkan spesialis lain") }}
+        </div>
+
+        {# Level #}
+         <div class="mb-4">
+            {{ form.level.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {# Beri ID 'level_select' #}
+            {{ form.level(class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md", id="level_select") }}
+            {% if form.level.errors %}
+                <ul class="text-red-500 text-xs mt-1">
+                {% for error in form.level.errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+         {# Field Kustom (Beri ID 'level_custom_div') #}
+        <div id="level_custom_div" class="mb-4 {% if form.level.data != 'ISI_SENDIRI' %}hidden{% endif %}">
+             {{ render_field(form.level_custom, placeholder="Masukkan level lain") }}
+        </div>
+
+        {{ render_field(form.password, placeholder="Minimal 6 karakter", type="password") }}
+        {{ render_field(form.confirm_password, placeholder="Ketik ulang password", type="password") }}
+
+        <div>
+            {{ form.submit(class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer") }}
+        </div>
+    </form>
+    <p class="mt-6 text-center text-sm text-gray-600">
+        Sudah punya akun?
+        <a href="{{ url_for('auth.login') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
+            Login di sini
+        </a>
+    </p>
+</div>
+{% endblock %}
+
+{# Tambahkan Javascript di akhir dengan PERBAIKAN #}
+{% block scripts_extra %}
+    {{ super() }} {# Memanggil script dari layout.html jika ada #}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const spesialisSelect = document.getElementById('spesialis_select'); // <-- Perhatikan ID
+            const spesialisCustomDiv = document.getElementById('spesialis_custom_div'); // <-- Perhatikan ID
+            const levelSelect = document.getElementById('level_select');
+            const levelCustomDiv = document.getElementById('level_custom_div');
+
+            function toggleCustomField(selectElement, customDiv) {
+                // Periksa apakah elemen ada sebelum mengaksesnya
+                if (selectElement && customDiv) {
+                    if (selectElement.value === 'ISI_SENDIRI') {
+                        customDiv.classList.remove('hidden');
+                    } else {
+                        customDiv.classList.add('hidden');
+                        // Optional: Kosongkan field kustom saat disembunyikan
+                        // const inputField = customDiv.querySelector('input');
+                        // if (inputField) { inputField.value = ''; }
+                    }
+                }
+            }
+
+            // Tambahkan event listener HANYA jika elemen ditemukan
+            if (spesialisSelect) {
+                spesialisSelect.addEventListener('change', () => toggleCustomField(spesialisSelect, spesialisCustomDiv));
+                toggleCustomField(spesialisSelect, spesialisCustomDiv); // Panggil saat load
+            }
+            if (levelSelect) {
+                levelSelect.addEventListener('change', () => toggleCustomField(levelSelect, levelCustomDiv));
+                toggleCustomField(levelSelect, levelCustomDiv); // Panggil saat load
+            }
+        });
+    </script>
+{% endblock %}

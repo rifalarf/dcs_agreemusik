@@ -1,0 +1,10 @@
+instance/
+keys/private_key.pem
+keys/public_key.pem
+__pycache__/
+*.pyc
+.DS_Store
+*.sqlite
+*.db
+migrations/
+.flaskenv

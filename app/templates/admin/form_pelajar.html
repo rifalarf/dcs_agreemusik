@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% from "includes/_macros.html" import render_field %}
+
+{% block title %}{{ title }} - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl mt-8">
+    <h1 class="text-2xl font-bold text-indigo-700 mb-6">{{ legend }}</h1>
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        {{ form.pelajar_id }} {# Untuk edit #}
+
+        {{ render_field(form.username, placeholder="Username unik pelajar") }}
+        {{ render_field(form.email, placeholder="Email aktif pelajar", type="email") }}
+        {{ render_field(form.nama_lengkap, placeholder="Nama lengkap pelajar") }}
+
+        {# --- PERBAIKAN DI SINI: Hapus label eksplisit --- #}
+        {# Spesialis #}
+        <div class="mb-4">
+            {# HAPUS BARIS INI: {{ form.spesialis.label(class="block text-sm font-medium text-gray-700 mb-1") }} #}
+            {{ render_field(form.spesialis, class_="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md", attrs={'id': 'spesialis_select'}) }}
+        </div>
+        <div id="spesialis_custom_div" class="mb-4 {% if form.spesialis.data != 'ISI_SENDIRI' %}hidden{% endif %}">
+             {{ render_field(form.spesialis_custom, placeholder="Masukkan spesialis lain") }}
+        </div>
+
+        {# Level #}
+         <div class="mb-4">
+            {# HAPUS BARIS INI: {{ form.level.label(class="block text-sm font-medium text-gray-700 mb-1") }} #}
+            {{ render_field(form.level, class_="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md", attrs={'id': 'level_select'}) }}
+        </div>
+        <div id="level_custom_div" class="mb-4 {% if form.level.data != 'ISI_SENDIRI' %}hidden{% endif %}">
+             {{ render_field(form.level_custom, placeholder="Masukkan level lain") }}
+        </div>
+        {# ------------------------------------------------- #}
+
+        {{ render_field(form.password, placeholder="Kosongkan jika tidak ingin mengubah", type="password") }}
+
+        <div class="mb-4">
+            {# Untuk SelectField Role, kita juga bisa gunakan render_field agar konsisten #}
+            {{ render_field(form.role, class_="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md") }}
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 mt-8">
+            <a href="{{ url_for('admin.manage_pelajar') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm transition duration-150">
+                Batal
+            </a>
+            {{ form.submit(class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-150 cursor-pointer") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{# Javascript tetap sama seperti sebelumnya #}
+{% block scripts_extra %}
+    {{ super() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const spesialisSelect = document.getElementById('spesialis_select');
+            const spesialisCustomDiv = document.getElementById('spesialis_custom_div');
+            const levelSelect = document.getElementById('level_select');
+            const levelCustomDiv = document.getElementById('level_custom_div');
+
+            function toggleCustomField(selectElement, customDiv) {
+                if (selectElement && customDiv) {
+                    if (selectElement.value === 'ISI_SENDIRI') {
+                        customDiv.classList.remove('hidden');
+                    } else {
+                        customDiv.classList.add('hidden');
+                    }
+                }
+            }
+
+            if (spesialisSelect) {
+                spesialisSelect.addEventListener('change', () => toggleCustomField(spesialisSelect, spesialisCustomDiv));
+                toggleCustomField(spesialisSelect, spesialisCustomDiv);
+            }
+            if (levelSelect) {
+                levelSelect.addEventListener('change', () => toggleCustomField(levelSelect, levelCustomDiv));
+                toggleCustomField(levelSelect, levelCustomDiv);
+            }
+        });
+    </script>
+{% endblock %}
