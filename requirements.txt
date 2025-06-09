@@ -9,6 +9,6 @@ Pillow
 pySHA3
 python-dotenv
 Flask-Migrate
-email-validator # <-- TAMBAHKAN INI
+email-validator
 pyzbar
 requests
