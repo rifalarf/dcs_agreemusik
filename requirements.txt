@@ -11,3 +11,4 @@ python-dotenv
 Flask-Migrate
 email-validator # <-- TAMBAHKAN INI
 pyzbar
+requests

@@ -1,23 +1,1044 @@
-{% extends "layout.html" %}
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AGREE MUSIK - Sekolah Musik & Studio Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <nav class="bg-black/80 backdrop-blur-md sticky top-0 z-50 shadow-lg">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-20">
+          <div class="flex items-center">            <a href="#home" class="flex-shrink-0">
+              <img
+                class="h-12 w-auto"
+                src="{{ url_for('static', filename='images/logo.png') }}"
+                alt="AGREE MUSIK Logo"
+              />
+            </a>
+          </div>
+          <div class="hidden md:block">
+            <div class="ml-10 flex items-baseline space-x-4">
+              <a
+                href="#home"
+                class="text-gray-300 hover:brand-gold px-3 py-2 rounded-md text-sm font-medium"
+                >Home</a
+              >
+              <a
+                href="#layanan"
+                class="text-gray-300 hover:brand-gold px-3 py-2 rounded-md text-sm font-medium"
+                >Layanan</a
+              >
+              <a
+                href="#pengajar"
+                class="text-gray-300 hover:brand-gold px-3 py-2 rounded-md text-sm font-medium"
+                >Pengajar</a
+              >
+              <a
+                href="#prestasi"
+                class="text-gray-300 hover:brand-gold px-3 py-2 rounded-md text-sm font-medium"
+                >Prestasi</a
+              >
+              <a
+                href="#kontak"
+                class="text-gray-300 hover:brand-gold px-3 py-2 rounded-md text-sm font-medium"
+                >Kontak</a
+              >              <span class="text-gray-500">|</span>              <a href="{{ url_for('public.verify_certificate') }}" class="text-gray-300 hover:brand-gold px-3 py-2 rounded-md text-sm font-medium transition duration-150">
+                <b>Verifikasi Sertifikat</b>
+              </a>
+              <a href="{{ url_for('auth.login') }}" class="bg-brand-gold hover:hover-bg-brand-gold-dark text-black px-4 py-2 rounded-md text-sm font-semibold transition duration-150">
+                <i class="fas fa-sign-in-alt mr-1"></i>Login
+              </a>
+              <a href="{{ url_for('auth.register') }}" class="bg-brand-gold hover:hover-bg-brand-gold-dark text-black px-4 py-2 rounded-md text-sm font-semibold transition duration-150">
+                <i class="fas fa-user-plus mr-1"></i>Register
+              </a>
+            </div>
+          </div>
+          <div class="-mr-2 flex md:hidden">
+            <button
+              type="button"
+              id="mobile-menu-lp-button"
+              class="bg-gray-900 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
+              aria-controls="mobile-menu-lp"
+              aria-expanded="false"
+            >
+              <span class="sr-only">Open main menu</span
+              ><i class="fas fa-bars"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="md:hidden hidden" id="mobile-menu-lp">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <a
+            href="#home"
+            class="text-gray-300 hover:brand-gold block px-3 py-2 rounded-md text-base font-medium"
+            >Home</a
+          >
+          <a
+            href="#layanan"
+            class="text-gray-300 hover:brand-gold block px-3 py-2 rounded-md text-base font-medium"
+            >Layanan</a
+          >
+          <a
+            href="#pengajar"
+            class="text-gray-300 hover:brand-gold block px-3 py-2 rounded-md text-base font-medium"
+            >Pengajar</a
+          >
+          <a
+            href="#prestasi"
+            class="text-gray-300 hover:brand-gold block px-3 py-2 rounded-md text-base font-medium"
+            >Prestasi</a
+          >
+          <a
+            href="#kontak"
+            class="text-gray-300 hover:brand-gold block px-3 py-2 rounded-md text-base font-medium"
+            >Kontak</a
+          >          <a
+            href="{{ url_for('public.verify_certificate') }}"
+            class="text-gray-300 hover:brand-gold block px-3 py-2 rounded-md text-base font-medium"
+            ><i class="fas fa-certificate mr-2"></i>Verifikasi Sertifikat</a
+          >
+        </div>        <div class="pt-4 pb-3 border-t border-gray-700">
+          <div class="px-2 space-y-2">            <a
+              href="{{ url_for('auth.login') }}"
+              class="bg-green-500 hover:bg-green-600 text-white block px-3 py-2 rounded-md text-base font-medium text-center transition duration-150"
+              ><i class="fas fa-sign-in-alt mr-2"></i>Login</a
+            >
+            <a
+              href="{{ url_for('auth.register') }}"
+              class="bg-brand-gold text-black block px-3 py-2 rounded-md text-base font-medium hover-bg-brand-gold-dark text-center transition duration-150"
+              ><i class="fas fa-user-plus mr-2"></i>Register</a
+            >
+          </div>
+        </div>
+      </div>
+    </nav>
 
-{% block content %}
-<div class="bg-white p-8 rounded-lg shadow-lg text-center">
-    <h1 class="text-4xl font-bold text-indigo-600 mb-6">Selamat Datang di Sistem Sertifikat Digital</h1>
-    <p class="text-lg text-gray-700 mb-8">
-        Kelola dan verifikasi sertifikat kompetensi Anda dengan aman dan mudah.
-    </p>
-    <div class="space-y-4 md:space-y-0 md:space-x-4">
-        <a href="{{ url_for('public.verify_certificate') }}" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
-            <i class="fas fa-check-circle mr-2"></i>Verifikasi Sertifikat
+    <section
+      id="home"
+      class="hero-bg min-h-screen flex items-center justify-center text-center relative"
+    >
+      <div class="absolute inset-0 bg-black opacity-60"></div>
+      <div class="relative z-10 p-8">
+        <h1
+          class="text-5xl md:text-7xl font-bold brand-gold text-shadow-custom mb-6 animate-fade-in-down"
+        >
+          AGREE MUSIK
+        </h1>
+        <p
+          class="text-xl md:text-xl text-gray-200 mb-8 max-w-3xl mx-auto text-shadow-custom animate-fade-in-up animation-delay-300"
+        >
+          Kami menawarkan program les musik terbaik untuk anak-anak, remaja, dan
+          dewasa dengan tenaga pengajar yang berkualitas.
+        </p>
+        <a
+          href="#"
+          class="bg-brand-gold text-black font-bold py-4 px-10 rounded-lg text-lg hover-bg-brand-gold-dark transition duration-300 ease-in-out transform hover:scale-105 shadow-lg animate-fade-in-up animation-delay-600"
+        >
+          Daftar Les Sekarang <i class="fas fa-arrow-right ml-2"></i>
         </a>
-        {% if not current_user.is_authenticated %}
-        <a href="{{ url_for('auth.login') }}" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
-            <i class="fas fa-sign-in-alt mr-2"></i>Login
-        </a>
-        <a href="{{ url_for('auth.register') }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
-            <i class="fas fa-user-plus mr-2"></i>Registrasi Pelajar
-        </a>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
+      </div>
+    </section>
+    <section id="layanan" class="py-16 md:py-24 service-section">
+      <div class="container mx-auto px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2
+            class="text-4xl md:text-5xl font-bold brand-gold mb-4 uppercase tracking-wider"
+          >
+            Klik Tujuanmu
+          </h2>
+        </div>
+        <div
+          class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12 md:gap-x-10 md:gap-y-16"
+        >
+          <a
+            href="#infolomba"
+            class="group text-center flex flex-col items-center p-4 hover:bg-gray-800 rounded-lg transition-colors duration-300"
+          >
+            <div
+              class="text-6xl md:text-7xl text-white group-hover:brand-gold mb-4 transition-colors duration-300"
+            >
+              <i class="fas fa-trophy"></i>
+            </div>
+            <h3
+              class="text-lg md:text-xl font-semibold text-white group-hover:brand-gold mb-1 transition-colors duration-300"
+            >
+              INFORMASI
+            </h3>
+            <h3
+              class="text-lg md:text-xl font-semibold brand-gold group-hover:text-white transition-colors duration-300 uppercase"
+            >
+              LOMBA
+            </h3>
+          </a>
+          <a
+            href="#detail-layanan-les"
+            class="group text-center flex flex-col items-center p-4 hover:bg-gray-800 rounded-lg transition-colors duration-300"
+          >
+            <div
+              class="text-6xl md:text-7xl text-white group-hover:brand-gold mb-4 transition-colors duration-300"
+            >
+              <i class="fas fa-book-open"></i>
+            </div>
+            <h3
+              class="text-lg md:text-xl font-semibold text-white group-hover:brand-gold mb-1 transition-colors duration-300"
+            >
+               
+            </h3>
+            <h3
+              class="text-lg md:text-xl font-semibold brand-gold group-hover:text-white transition-colors duration-300 uppercase"
+            >
+              LES MUSIK
+            </h3>
+          </a>
+          <a
+            href="#pengajar"
+            class="group text-center flex flex-col items-center p-4 hover:bg-gray-800 rounded-lg transition-colors duration-300"
+          >
+            <div
+              class="text-6xl md:text-7xl text-white group-hover:brand-gold mb-4 transition-colors duration-300"
+            >
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <h3
+              class="text-lg md:text-xl font-semibold text-white group-hover:brand-gold mb-1 transition-colors duration-300"
+            >
+               
+            </h3>
+            <h3
+              class="text-lg md:text-xl font-semibold brand-gold group-hover:text-white transition-colors duration-300 uppercase"
+            >
+              PENGAJAR
+            </h3>
+          </a>
+          <a
+            href="#materi"
+            class="group text-center flex flex-col items-center p-4 hover:bg-gray-800 rounded-lg transition-colors duration-300"
+          >
+            <div
+              class="text-6xl md:text-7xl text-white group-hover:brand-gold mb-4 transition-colors duration-300"
+            >
+              <i class="fas fa-desktop"></i>
+            </div>
+            <h3
+              class="text-lg md:text-xl font-semibold text-white group-hover:brand-gold mb-1 transition-colors duration-300"
+            >
+              MATERI
+            </h3>
+            <h3
+              class="text-lg md:text-xl font-semibold brand-gold group-hover:text-white transition-colors duration-300 uppercase"
+            >
+              PEMBELAJARAN
+            </h3>
+          </a>
+          <a
+            href="#aktivitas"
+            class="group text-center flex flex-col items-center p-4 hover:bg-gray-800 rounded-lg transition-colors duration-300"
+          >
+            <div
+              class="text-6xl md:text-7xl text-white group-hover:brand-gold mb-4 transition-colors duration-300"
+            >
+              <i class="fas fa-users-cog"></i>
+            </div>
+            <h3
+              class="text-lg md:text-xl font-semibold text-white group-hover:brand-gold mb-1 transition-colors duration-300"
+            >
+              AKTIFITAS
+            </h3>
+            <h3
+              class="text-lg md:text-xl font-semibold brand-gold group-hover:text-white transition-colors duration-300 uppercase"
+            >
+              PEMBELAJARAN
+            </h3>
+          </a>
+          <a
+            href="#prestasi"
+            class="group text-center flex flex-col items-center p-4 hover:bg-gray-800 rounded-lg transition-colors duration-300"
+          >
+            <div
+              class="text-6xl md:text-7xl text-white group-hover:brand-gold mb-4 transition-colors duration-300"
+            >
+              <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h3
+              class="text-lg md:text-xl font-semibold text-white group-hover:brand-gold mb-1 transition-colors duration-300"
+            >
+              PRESTASI
+            </h3>
+            <h3
+              class="text-lg md:text-xl font-semibold brand-gold group-hover:text-white transition-colors duration-300 uppercase"
+            >
+              PELAJAR
+            </h3>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="salam-artis" class="py-16 md:py-24 relative z-10">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="salam-artis-title">Dukungan</h2>
+
+        <div class="video-showcase-grid">
+          <div class="video-showcase-card">
+            <div class="video-player-wrapper aspect-16-9">              <video
+                poster="{{ url_for('static', filename='images/thumbnails/pasha.png') }}"
+                preload="metadata"
+                playsinline
+                loop
+                muted
+              >
+                <source src="{{ url_for('static', filename='videos/pasha_ungu.mp4') }}" type="video/mp4" />
+                Browser Anda tidak mendukung tag video.
+              </video>
+              <div
+                class="custom-play-button"
+                aria-label="Putar Video Pasha Ungu"
+              >
+                <i class="fas fa-play"></i>
+              </div>
+            </div>
+            <div class="video-caption-showcase">
+              <h4>PASHA UNGU</h4>
+            </div>
+          </div>
+
+          <div class="video-showcase-card">
+            <div class="video-player-wrapper aspect-16-9">              <video
+                poster="{{ url_for('static', filename='images/thumbnails/oncy.png') }}"
+                preload="metadata"
+                playsinline
+                loop
+                muted
+              >
+                <source src="{{ url_for('static', filename='videos/oncy_ungu.mp4') }}" type="video/mp4" />
+                Browser Anda tidak mendukung tag video.
+              </video>
+              <div
+                class="custom-play-button"
+                aria-label="Putar Video Oncy Ungu"
+              >
+                <i class="fas fa-play"></i>
+              </div>
+            </div>
+            <div class="video-caption-showcase">
+              <h4>ONCY UNGU</h4>
+            </div>
+          </div>
+
+          <div class="video-showcase-card">
+            <div class="video-player-wrapper aspect-16-9">              <video
+                poster="{{ url_for('static', filename='images/thumbnails/vob.png') }}"
+                preload="metadata"
+                playsinline
+                loop
+                muted
+              >
+                <source src="{{ url_for('static', filename='videos/vob.mp4') }}" type="video/mp4" />
+                Browser Anda tidak mendukung tag video.
+              </video>
+              <div
+                class="custom-play-button"
+                aria-label="Putar Video Voice of Baceprot"
+              >
+                <i class="fas fa-play"></i>
+              </div>
+            </div>
+            <div class="video-caption-showcase">
+              <h4>VOICE OF BACEPROT</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pengajar" class="py-16 md:py-24 relative z-10">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+          <h3 class="pengajar-category-title">Pengajar Musik Barat</h3>
+        </div>
+        <div class="pengajar-grid mt-8">          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/jodi.png') }}" alt="COACH JODI" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH JODI</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/agi.png') }}" alt="COACH AGI" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH AGI</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/reka.png') }}" alt="COACH REKA" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH REKA</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/maruf.png') }}" alt="COACH MA'RUF" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH MA'RUF</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/astria.png') }}" alt="COACH ASTRIA" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH ASTRIA</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/farhan.png') }}" alt="COACH FARHAN" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH FARHAN</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-16">
+          <h3 class="pengajar-category-title">Pengajar Musik Tradisional</h3>
+        </div>
+        <div class="pengajar-grid mt-8">          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/sri.png') }}" alt="COACH SRI" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH SRI</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/panji.png') }}" alt="COACH PANJI" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH PANJI</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+          <div class="pengajar-card-circle">
+            <div class="pengajar-photo-circle-wrapper">
+              <img src="{{ url_for('static', filename='images/pengajar/yoga.png') }}" alt="COACH YOGA" />
+            </div>
+            <div class="pengajar-info-circle">
+              <h4>COACH YOGA</h4>
+              <div class="pengajar-social-icons-circle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="infolomba"
+      class="py-16 md:py-24 bg-gray-900/80 backdrop-blur-sm relative z-10"
+    >
+      <div class="container mx-auto px-6 lg:px-8">
+        <div class="text-center mb-12">
+          <h2 class="text-4xl font-bold brand-gold mb-4">
+            Ikuti Perlombaan Kami!
+          </h2>
+        </div>
+        <div class="max-w-3xl mx-auto bg-gray-600 p-8 rounded-lg shadow-xl">
+          <h3 class="text-2xl font-semibold text-white mb-4">
+            Lomba Menyanyi Solo AGREE MUSIK 2025
+          </h3>
+          <p class="text-gray-400 mb-6">
+            Segera hadir! Pantau terus informasi terbaru dari kami.
+          </p>
+          <a
+            href="#kontak"
+            class="bg-brand-gold text-black font-bold py-3 px-6 rounded-lg text-md hover-bg-brand-gold-dark"
+            >Hubungi untuk Info</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <section
+      id="detail-layanan-les"
+      class="pb-16 md:pb-24 service-section relative z-10"
+    >
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="service-section-title">Layanan Kami</h2>
+        <div class="service-category-wrapper text-center">
+          <h3 id="" class="service-category-title">Pilihan Les Musik</h3>
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 mt-8"
+          >
+            <div class="service-card">
+              <i class="fas fa-drum"></i>
+              <h4>Musik Tradisional</h4>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-guitar"></i>
+              <h4>Musik Barat</h4>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-hands-helping"></i>
+              <h4>Musik Tunanetra</h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-category-wrapper text-center">
+          <h3 class="service-category-title">Pembuatan Musik Profesional</h3>
+          <div
+            class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 mt-8"
+          >
+            <div class="service-card">
+              <i class="fas fa-microphone-alt"></i>
+              <h4>Musik Karaoke</h4>
+              <p>Minus-one berkualitas tinggi.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-theater-masks"></i>
+              <h4>Musik Tari</h4>
+              <p>Aransemen dinamis untuk tarian.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-sliders-h"></i>
+              <h4>Musik Instrumen</h4>
+              <p>Komposisi orisinal beragam.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-flag"></i>
+              <h4>Mars Instansi</h4>
+              <p>Semangat dan identitas instansi.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-record-vinyl"></i>
+              <h4>Rekaman Musik</h4>
+              <p>Rekaman profesional berkualitas.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-university"></i>
+              <h4>Hymne Instansi</h4>
+              <p>Komposisi khidmat & berkesan.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-category-wrapper text-center">
+          <h3 class="service-category-title">Layanan Paduan Suara</h3>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8 mt-8">
+            <div class="service-card">
+              <i class="fas fa-glass-cheers"></i>
+              <h4>Event Khusus</h4>
+              <p>Memeriahkan berbagai acara.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-building"></i>
+              <h4>Acara Instansi</h4>
+              <p>Untuk acara formal & informal.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-school"></i>
+              <h4>Eskul Sekolah</h4>
+              <p>Pembinaan ekstrakurikuler.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-calendar-check"></i>
+              <h4>Hari Besar</h4>
+              <p>Perayaan hari nasional.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-category-wrapper text-center">
+          <h3 class="service-category-title">Pelatihan Intensif Lomba</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-8 mt-8">
+            <div class="service-card">
+              <i class="fas fa-award"></i>
+              <h4>FLS2N</h4>
+              <p>Persiapan Festival Lomba Seni Siswa Nasional</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-microphone-alt"></i>
+              <h4>Lomba Nyanyi</h4>
+              <p>Vokal, interpretasi, panggung.</p>
+            </div>
+            <div class="service-card">
+              <i class="fas fa-play-circle"></i>
+              <h4>Lomba Instrumen</h4>
+              <p>Teknik & musikalitas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </svg>
+    <section
+      id="prestasi"
+      class="py-16 md:py-24 bg-gray-800 backdrop-blur-sm relative z-10"
+    >
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h2
+          class="text-4xl md:text-5xl font-bold brand-gold text-center mb-16 uppercase tracking-wider text-shadow-custom"
+        >
+          PRESTASI PELAJAR KAMI
+        </h2>
+
+        <div class="swiper-wrapper-outer">
+          <div class="swiper" id="swiperPrestasi1">
+            <div class="swiper-wrapper">
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi1.jpg"
+                  alt="Prestasi 1"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi2.jpg"
+                  alt="Prestasi 2"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi3.jpg"
+                  alt="Prestasi 3"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi4.jpg"
+                  alt="Prestasi 4"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi5.jpg"
+                  alt="Prestasi 5"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi6.jpg"
+                  alt="Prestasi 6"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi7.jpg"
+                  alt="Prestasi 7"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi8.jpg"
+                  alt="Prestasi 8"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi9.jpg"
+                  alt="Prestasi 9"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi10.jpg"
+                  alt="Prestasi 10"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi11.jpg"
+                  alt="Prestasi 11"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swiper-wrapper-outer staggered">
+          <div class="swiper" id="swiperPrestasi2">
+            <div class="swiper-wrapper">
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi12.jpg"
+                  alt="Prestasi 12"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi13.jpg"
+                  alt="Prestasi 13"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi14.jpg"
+                  alt="Prestasi 14"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi15.jpg"
+                  alt="Prestasi 15"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi16.jpg"
+                  alt="Prestasi 16"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi17.jpg"
+                  alt="Prestasi 17"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi18.jpg"
+                  alt="Prestasi 18"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi19.jpg"
+                  alt="Prestasi 19"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi20.jpg"
+                  alt="Prestasi 20"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/prestasi/prestasi21.jpg"
+                  alt="Prestasi 21"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prestasi" class="pb-16 md:pb-24 bg-gray-800">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h2
+          class="text-4xl md:text-5xl font-bold brand-gold text-center mb-16 uppercase tracking-wider text-shadow-custom"
+        >
+          PELAJAR HEBAT KAMI
+        </h2>
+
+        <div class="swiper-wrapper-outer">
+          <div class="swiper" id="swiperPrestasi1">
+            <div class="swiper-wrapper">
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat1.jpg"
+                  alt="Pelajar Musik Barat 1"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat2.jpg"
+                  alt="Pelajar Musik Barat 2"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat3.jpg"
+                  alt="Pelajar Musik Barat 3"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat4.jpg"
+                  alt="Pelajar Musik Barat 4"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat5.jpg"
+                  alt="Pelajar Musik Barat 5"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat6.jpg"
+                  alt="Pelajar Musik Barat 6"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat7.jpg"
+                  alt="Pelajar Musik Barat 7"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat8.jpg"
+                  alt="Pelajar Musik Barat 8"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat9.jpg"
+                  alt="Pelajar Musik Barat 9"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat10.jpg"
+                  alt="Pelajar Musik Barat 10"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat11.jpg"
+                  alt="Pelajar Musik Barat 11"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat12.jpg"
+                  alt="Pelajar Musik Barat 12"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat13.jpg"
+                  alt="Pelajar Musik Barat 13"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat14.jpg"
+                  alt="Pelajar Musik Barat 14"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat15.jpg"
+                  alt="Pelajar Musik Barat 15"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat16.jpg"
+                  alt="Pelajar Musik Barat 16"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat17.jpg"
+                  alt="Pelajar Musik Barat 17"
+                />
+              </div>
+              <div class="swiper-slide">
+                <img
+                  src="static/images/musik_barat/pelajar_musik_barat18.jpg"
+                  alt="Pelajar Musik Barat 18"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontak" class="py-16 md:py-24 bg-black text-gray-400">
+      <div class="container mx-auto px-6 lg:px-8">
+        <h2
+          class="text-4xl md:text-5xl font-bold brand-gold text-center mb-16 uppercase tracking-wider"
+        >
+          Hubungi Kami
+        </h2>
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16 items-center"
+        >
+          <div class="space-y-6">
+            <h3 class="text-3xl font-semibold text-white mb-6">AGREE MUSIK</h3>
+            <div class="flex items-start">
+              <i
+                class="fas fa-map-marker-alt fa-fw mr-4 brand-gold text-xl pt-1"
+              ></i>
+              <p class="text-base leading-relaxed">
+                Jl. Bratayuda No.76, Kota Kulon, Kec. Garut Kota, Kabupaten
+                Garut, Jawa Barat 44112.
+              </p>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-phone fa-fw mr-4 brand-gold text-xl"></i>
+              <p class="text-base">0851-7434-2505</p>
+            </div>
+            <div class="flex items-center">
+              <i class="fab fa-whatsapp fa-fw mr-4 brand-gold text-xl"></i>
+              <p class="text-base">0851-7434-2505</p>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-envelope fa-fw mr-4 brand-gold text-xl"></i>
+              <p class="text-base">Email</p>
+            </div>
+            <div class="mt-8 flex space-x-6">
+              <a
+                href="https://www.instagram.com/agreemusik"
+                class="text-gray-400 hover:brand-gold text-3xl transition-colors duration-200"
+                ><i class="fab fa-instagram-square"></i
+              ></a>
+              <a
+                href="https://www.facebook.com/agreemusik"
+                class="text-gray-400 hover:brand-gold text-3xl transition-colors duration-200"
+                ><i class="fab fa-facebook-square"></i
+              ></a>
+              <a
+                href="#"
+                class="text-gray-400 hover:brand-gold text-3xl transition-colors duration-200"
+                ><i class="fab fa-youtube-square"></i
+              ></a>
+            </div>
+          </div>          <div
+            class="w-full h-80 md:h-full rounded-lg overflow-hidden shadow-lg border-2 border-gray-800"
+          >
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3958.166351804743!2d107.9107576!3d-7.2218583!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68b17ee3d1896d%3A0x8a5f04d230ae271d!2sAGREE%20MUSIK!5e0!3m2!1sen!2sid!4v1748779821458!5m2!1sen!2sid"
+              width="100%"
+              height="100%"
+              style="border: 0"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            >
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-white py-6">
+      <div class="container mx-auto px-6 lg:px-8">
+        <div class="text-center text-sm">
+          <p>
+            © <span id="currentYear">2025</span> AGREE MUSIK. All rights
+            reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <a
+      href="https://api.whatsapp.com/send/?phone=6285174342505&text=Halo+Saya+ingin+bergabung+dengan+keluarga+AGREE+MUSIK&type=phone_number&app_absent=0"
+      class="whatsapp-float"
+      target="_blank"
+      aria-label="Chat di WhatsApp"
+    >
+      <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- Script Mobile Menu ---
+        const menuButtonLp = document.getElementById("mobile-menu-lp-button");
+        const mobileMenuLp = document.getElementById("mobile-menu-lp");
+        if (menuButtonLp && mobileMenuLp) {
+          menuButtonLp.addEventListener("click", () => {
+            const expanded =
+              menuButtonLp.getAttribute("aria-expanded") === "true" || false;
+            menuButtonLp.setAttribute("aria-expanded", !expanded);
+            mobileMenuLp.classList.toggle("hidden");
+          });
+        }
+
+        const mobileLinks = document.querySelectorAll("#mobile-menu-lp a"); // Target menu mobile
+        mobileLinks.forEach((link) => {
+          link.addEventListener("click", () => {
+            if (mobileMenuLp && !mobileMenuLp.classList.contains("hidden")) {
+              mobileMenuLp.classList.add("hidden");
+              menuButtonLp.setAttribute("aria-expanded", "false");
+            }
+          });
+        });
+
+        // --- Set Tahun di Footer ---
+        const currentYearSpan = document.getElementById("currentYear");
+        if (currentYearSpan) {
+          currentYearSpan.textContent = new Date().getFullYear();
+        }
+
+        // --- Inisialisasi Swiper ---
+        function initMarqueeSwiper(selector, reverse = false) {
+          const swiperElement = document.querySelector(selector);
+          if (!swiperElement) {
+            console.error("Swiper selector not found:", selector);
+            return null;
+          }
+
+          const slidesCount =
+            swiperElement.querySelectorAll(".swiper-slide").length;
+
+          return new Swiper(selector, {
+            loop: true,
+            slidesPerView: "auto",
+            spaceBetween: 48, // Jarak tetap
+            speed: 15000, // <--- Kecepatan lebih lambat lagi (15 detik)
+            autoplay: {
+              delay: 1,
+              disableOnInteraction: false,
+              reverseDirection: reverse,
+            },
+            allowTouchMove: true, // Enable touch/swipe interaction
+            freeMode: false,
+            // Set loopedSlides ke jumlah slide asli atau lebih
+            loopedSlides: slidesCount > 10 ? slidesCount : 10,
+            // Enable mouse wheel control
+            mousewheel: {
+              enabled: true,
+              forceToAxis: true,
+            },
+            // Enable keyboard control
+            keyboard: {
+              enabled: true,
+              onlyInViewport: true,
+            },
+            // Enable grab cursor
+            grabCursor: true,
+          });
+        }
+
+        const swiper1 = initMarqueeSwiper("#swiperPrestasi1", false);
+        const swiper2 = initMarqueeSwiper("#swiperPrestasi2", false);
+      });
+    </script>
+  </body>
+</html>
