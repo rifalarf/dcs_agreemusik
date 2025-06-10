@@ -23,7 +23,6 @@ packaging
 Pillow
 pycparser
 pyOpenSSL
-pySHA3
 python-dotenv
 pyzbar
 qrcode[pil]
