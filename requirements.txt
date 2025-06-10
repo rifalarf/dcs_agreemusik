@@ -12,3 +12,4 @@ Flask-Migrate
 email-validator
 pyzbar
 requests
+gunicorn
