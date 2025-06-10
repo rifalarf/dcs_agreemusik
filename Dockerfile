@@ -58,4 +58,4 @@ RUN flask db upgrade && \
 # Menggunakan Gunicorn sebagai WSGI server yang direkomendasikan untuk production.
 # run:app mengacu pada objek aplikasi Flask 'app' yang ada di file 'run.py'.
 # --bind 0.0.0.0:$PORT: membuat Gunicorn mendengarkan koneksi dari semua interface pada port yang diberikan oleh Railway.
-CMD ["gunicorn", "run:app", "--bind", "0.0.0.0:$PORT"]
+CMD gunicorn run:app --bind 0.0.0.0:$PORT
