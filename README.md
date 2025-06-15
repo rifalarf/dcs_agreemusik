@@ -176,9 +176,3 @@ Aplikasi ini dikonfigurasi untuk deployment menggunakan **Dockerfile** di Railwa
 
 4.  **Deployment:**
     * Picu deployment baru di Railway. Railway akan membangun Docker image dan menjalankan aplikasi Anda.
-
----
-
-Ini adalah draf yang cukup lengkap. Kamu bisa menambahkan bagian "Kontribusi" atau "Lisensi" jika proyek kamu *open source*.
-
-Apakah ada bagian spesifik yang ingin kamu tambahkan, ubah, atau detailkan lebih lanjut di `README.md` ini?
