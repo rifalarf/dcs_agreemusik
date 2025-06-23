@@ -34,9 +34,10 @@ def detail_sertifikat_pelajar(sertifikat_id):
 
     return render_template('pelajar/detail_sertifikat_pelajar.html', title='Detail Sertifikat', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
 
+# PERBAIKAN: Ganti nama fungsi agar sesuai dengan yang dipanggil oleh template
 @pelajar_bp.route('/sertifikat/lihat/<int:sertifikat_id>')
 @login_required
-def lihat_sertifikat(sertifikat_id):
+def cetak_sertifikat_pelajar(sertifikat_id):
     """
     Menyajikan file PDF sertifikat yang sudah ada untuk pelajar yang bersangkutan.
     """
