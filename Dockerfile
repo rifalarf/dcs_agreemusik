@@ -54,8 +54,8 @@ RUN flask db upgrade && \
     python generate_keys.py && \
     flask create-admin
 
-# PERBAIKAN: Gunakan worker gevent yang lebih efisien dan naikkan timeout
+# PERBAIKAN: Arahkan Gunicorn ke file yang benar (run:app)
 # -k gevent: Menggunakan worker class gevent
 # --workers 3: Menjalankan 3 worker untuk menangani lebih banyak request
 # --timeout 120: Menaikkan batas waktu dari 30 detik menjadi 120 detik
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "3", "--worker-class", "gevent", "--timeout", "120", "wsgi:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "3", "--worker-class", "gevent", "--timeout", "120", "run:app"]
