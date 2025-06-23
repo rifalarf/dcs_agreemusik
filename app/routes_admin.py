@@ -7,6 +7,7 @@ from .forms import PelajarForm, SertifikatForm, SPESIALIS_CHOICES, LEVEL_CHOICES
 from .models import User, Sertifikat
 from . import db
 from .utils_crypto import load_private_key, generate_qr_code_from_signature_text
+# PERBAIKAN: Impor fungsi yang benar
 from .utils_certificate import generate_certificate_pdf
 import os
 import hashlib # Pastikan hashlib diimpor
@@ -186,29 +187,26 @@ def tambah_sertifikat():
         
         sertifikat.prepare_and_sign(current_app.config, private_key_obj)
         
-        # PERUBAHAN: Gunakan fungsi baru, hanya dengan signature
+        # PERBAIKAN: Gunakan alur baru yang berbasis HTML/weasyprint
         qr_code_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
         pdf_bytes = generate_certificate_pdf(sertifikat, qr_code_b64)
         
-        # HITUNG DAN SIMPAN HASH DARI FILE PDF
         sertifikat.pdf_file_hash = hashlib.sha3_256(pdf_bytes).hexdigest()
         
-        # Simpan PDF ke server
+        # Simpan file PDF yang baru
         pdf_dir = os.path.join(current_app.instance_path, 'sertifikat_pdf')
         os.makedirs(pdf_dir, exist_ok=True)
-        pdf_filename = f'{sertifikat.id_sertifikat.replace("/", "_")}.pdf'
+        pdf_filename = f"{sertifikat.id_sertifikat}.pdf"
         pdf_path = os.path.join(pdf_dir, pdf_filename)
         with open(pdf_path, 'wb') as f:
             f.write(pdf_bytes)
-
-        # Simpan path PDF ke database (opsional, tapi direkomendasikan)
-        sertifikat.pdf_file_path = pdf_path # Anda perlu menambahkan kolom ini di models.py
-
+        
+        sertifikat.pdf_file_path = pdf_path
         db.session.add(sertifikat)
         db.session.commit()
-        flash(f'Sertifikat {sertifikat.id_sertifikat} berhasil dibuat dan PDF disimpan.', 'success')
-        return redirect(url_for('admin.manage_sertifikat'))
-    return render_template('admin/form_sertifikat.html', title='Tambah Sertifikat', form=form, legend='Tambah Sertifikat Baru')
+        flash('Sertifikat berhasil ditambahkan.', 'success')
+        return redirect(url_for('admin.dashboard_admin'))
+    return render_template('admin/tambah_sertifikat.html', title='Tambah Sertifikat', form=form)
 
 @admin_bp.route('/sertifikat/edit/<int:sertifikat_id>', methods=['GET', 'POST'])
 @login_required
