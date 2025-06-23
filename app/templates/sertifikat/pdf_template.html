@@ -17,8 +17,7 @@
     
     .certificate-container {
       box-sizing: border-box;
-      /* PERBAIKAN KUNCI: Hapus _external=True dari background URL */
-      background: url("{{ url_for('static', filename='images/background.png') }}") center/cover no-repeat;
+      background: url("{{ url_for('static', filename='images/background.png', _external=True) }}") center/cover no-repeat;
       width: 27.7cm;
       height: 19cm;
       margin: 1cm auto;
@@ -133,8 +132,7 @@
         <div class="qr-label">s.id/agreemusik</div>
       </div>
       <div class="footer-right">
-        <!-- PERBAIKAN: Hapus _external=True dari gambar tanda tangan -->
-        <img src="{{ url_for('static', filename='images/tandatangan/direktur/shofia.png') }}" alt="TTD" class="sign-image">
+        <img src="{{ url_for('static', filename='images/tandatangan/direktur/shofia.png', _external=True) }}" alt="TTD" class="sign-image">
           <div class="sign-box"></div>
         <div class="sign-name">{{ sertifikat.penandatangan }}</div>
         <div class="position-ag">DIREKTUR AGREE MUSIK</div>
