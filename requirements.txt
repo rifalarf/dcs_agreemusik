@@ -35,3 +35,4 @@ Werkzeug
 WeasyPrint
 PyMuPDF
 pdfplumber
+gevent

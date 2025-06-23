@@ -54,8 +54,8 @@ RUN flask db upgrade && \
     python generate_keys.py && \
     flask create-admin
 
-# Mendefinisikan perintah yang akan dijalankan saat container dimulai
-# Menggunakan Gunicorn sebagai WSGI server yang direkomendasikan untuk production.
-# run:app mengacu pada objek aplikasi Flask 'app' yang ada di file 'run.py'.
-# --bind 0.0.0.0:$PORT: membuat Gunicorn mendengarkan koneksi dari semua interface pada port yang diberikan oleh Railway.
-CMD gunicorn run:app --bind 0.0.0.0:$PORT
+# PERBAIKAN: Gunakan worker gevent yang lebih efisien dan naikkan timeout
+# -k gevent: Menggunakan worker class gevent
+# --workers 3: Menjalankan 3 worker untuk menangani lebih banyak request
+# --timeout 120: Menaikkan batas waktu dari 30 detik menjadi 120 detik
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "3", "--worker-class", "gevent", "--timeout", "120", "wsgi:app"]
