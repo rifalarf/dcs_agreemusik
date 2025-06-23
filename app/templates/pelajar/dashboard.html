@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard Pelajar - Sertifikat Digital{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 md:p-8 rounded-lg shadow-xl">
+    <h1 class="text-3xl font-bold text-indigo-700 mb-6 border-b pb-4">Dashboard Pelajar</h1>
+    <p class="text-lg text-gray-700 mb-8">Selamat datang, {{ current_user.nama_lengkap }}!</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-blue-100 p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold text-blue-800 mb-2">Informasi Akun</h2>
+            <p><strong>Username:</strong> {{ current_user.username }}</p>
+            <p><strong>Email:</strong> {{ current_user.email }}</p>
+            <p><strong>Nama Lengkap:</strong> {{ current_user.nama_lengkap }}</p>
+        </div>
+
+        <a href="{{ url_for('pelajar.list_sertifikat_pelajar') }}" class="block p-6 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
+            <div class="flex items-center">
+                <i class="fas fa-award fa-3x mr-4"></i>
+                <div>
+                    <h2 class="text-2xl font-semibold">Sertifikat Saya</h2>
+                    <p class="text-sm">Lihat semua sertifikat kompetensi yang Anda miliki ({{ jumlah_sertifikat }} sertifikat).</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

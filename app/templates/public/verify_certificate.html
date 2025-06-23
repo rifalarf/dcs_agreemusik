@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+{% from "includes/_macros.html" import render_field %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl mt-10">
+    <h1 class="text-3xl font-bold text-center text-indigo-600 mb-8">{{ title }}</h1>
+    
+    <form method="POST" action="{{ url_for('public.verify_certificate') }}" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-6 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Opsi 1: Unggah PDF Sertifikat</h2>
+            <p class="text-sm text-gray-600 mb-4">Cara termudah. Sistem akan otomatis membaca data dan QR code dari file PDF.</p>
+            <div class="mb-4">
+                {{ form.pdf_file_upload.label(class="block text-sm font-medium text-gray-700 sr-only") }}
+                {{ form.pdf_file_upload(class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer focus:outline-none") }}
+                {% if form.pdf_file_upload.errors %}
+                    <ul class="text-red-500 text-xs mt-1">
+                    {% for error in form.pdf_file_upload.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="text-center my-6 text-gray-500 font-semibold">ATAU</div>
+
+        <div class="mb-6 p-4 border border-dashed border-gray-300 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Opsi 2: Input Data Manual</h2>
+            <p class="text-sm text-gray-600 mb-4">Isi semua field di bawah ini persis seperti yang tertera pada sertifikat.</p>
+            {{ render_field(form.id_sertifikat, placeholder="Nomor pada sertifikat") }}
+            {{ render_field(form.nama_penerima, placeholder="Nama lengkap penerima") }}
+            {{ render_field(form.spesialis, placeholder="Spesialis yang tertera") }}
+            {{ render_field(form.tanggal_terbit, type="date") }}
+            {{ render_field(form.penandatangan, placeholder="Lembaga/pihak penandatangan") }}
+            
+            {# --- PERUBAHAN UNTUK SCANNER --- #}
+            <div class="mb-4">
+                {{ form.qr_content.label(class="block text-sm font-medium text-gray-700") }}
+                <div class="mt-1 flex rounded-md shadow-sm">
+                    {{ form.qr_content(class="flex-1 block w-full rounded-none rounded-l-md sm:text-sm border-gray-300", placeholder="Paste teks dari QR Code di sini", type="textarea", attrs={'id': 'qr_content_textarea'}) }}
+                    <button type="button" id="start-scan-btn" class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm hover:bg-gray-100">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="qr-reader" class="w-full md:w-96 mx-auto border rounded-lg overflow-hidden mt-2 hidden"></div>
+            <div id="qr-reader-status" class="text-center text-sm text-gray-500 mt-1"></div>
+            {# --- AKHIR PERUBAHAN --- #}
+        </div>
+
+        <div class="mt-8">
+            {{ form.submit(class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer") }}
+        </div>
+    </form>
+
+    {% if result %}
+    <div class="mt-10 p-6 rounded-lg border-2
+        {% if result == 'VALID' %} border-green-500 bg-green-50 text-green-700
+        {% else %} border-red-500 bg-red-50 text-red-700 {% endif %}">
+        <h2 class="text-2xl font-semibold mb-3 flex items-center">
+            {% if result == 'VALID' %}
+                <i class="fas fa-check-circle fa-fw mr-2 text-green-500"></i> Status: Sertifikat VALID
+            {% else %}
+                <i class="fas fa-times-circle fa-fw mr-2 text-red-500"></i> Status: Sertifikat TIDAK VALID
+            {% endif %}
+        </h2>
+        {% if result == 'VALID' and verified_data %}
+            <p>Integritas file dan tanda tangan digital telah berhasil diverifikasi.</p>
+            <div class="mt-4 pt-4 border-t border-green-200">
+                <h3 class="font-semibold text-lg mb-2">Data Terverifikasi dari Database:</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="md:col-span-2"><dt class="font-medium text-gray-500">Nomor ID</dt><dd class="font-mono">{{ verified_data.id_sertifikat }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Nama Penerima</dt><dd>{{ verified_data.pemilik.nama_lengkap }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Spesialis</dt><dd>{{ verified_data.spesialis }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Tanggal Terbit</dt><dd>{{ verified_data.tanggal_terbit.strftime('%d %B %Y') }}</dd></div>
+                    <div><dt class="font-medium text-gray-500">Penandatangan</dt><dd>{{ verified_data.penandatangan }}</dd></div>
+                </dl>
+            </div>
+        {% elif result != 'VALID' %}
+            <p>Tanda tangan digital tidak cocok atau terjadi kesalahan. Pastikan data yang diinput sudah benar atau file PDF tidak dimodifikasi.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+{{ super() }}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startScanBtn = document.getElementById('start-scan-btn');
+    const qrReaderDiv = document.getElementById('qr-reader');
+    const qrReaderStatus = document.getElementById('qr-reader-status');
+    const qrContentTextarea = document.getElementById('qr_content_textarea');
+    let html5QrcodeScanner = null;
+
+    function onScanSuccess(decodedText, decodedResult) {
+        qrContentTextarea.value = decodedText;
+        qrReaderStatus.innerHTML = `<span class="text-green-600 font-semibold">Scan Berhasil!</span>`;
+        if (html5QrcodeScanner && html5QrcodeScanner.getState() === 2) { // 2 is SCANNING
+            html5QrcodeScanner.stop().then(() => {
+                qrReaderDiv.classList.add('hidden');
+            }).catch(err => console.error("Gagal menghentikan scanner:", err));
+        }
+    }
+
+    function onScanFailure(error) {
+        // Tidak melakukan apa-apa, agar scan terus berjalan
+    }
+
+    startScanBtn.addEventListener('click', () => {
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        }
+
+        if (html5QrcodeScanner.getState() === 2) { // Jika sedang scan, hentikan
+            html5QrcodeScanner.stop().then(() => {
+                qrReaderDiv.classList.add('hidden');
+                qrReaderStatus.textContent = '';
+            });
+        } else {
+            qrReaderDiv.classList.remove('hidden');
+            qrReaderStatus.textContent = 'Arahkan kamera ke QR Code...';
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                qrReaderStatus.innerHTML = `<span class="text-red-600">Error kamera: ${err}</span>`;
+                qrReaderDiv.classList.add('hidden');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
