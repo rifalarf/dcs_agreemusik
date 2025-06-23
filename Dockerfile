@@ -1,6 +1,6 @@
 # Gunakan base image Python yang sesuai dan stabil.
-# 'slim-buster' adalah image berbasis Debian yang ringan.
-FROM python:3.11-slim-buster
+# 'slim-bullseye' adalah image berbasis Debian yang lebih baru dan ringan.
+FROM python:3.11-slim-bullseye
 
 # Mengatur direktori kerja di dalam container
 # Semua operasi selanjutnya akan dilakukan di direktori ini
