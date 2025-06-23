@@ -205,8 +205,11 @@ def tambah_sertifikat():
         db.session.add(sertifikat)
         db.session.commit()
         flash('Sertifikat berhasil ditambahkan.', 'success')
-        return redirect(url_for('admin.dashboard_admin'))
-    return render_template('admin/tambah_sertifikat.html', title='Tambah Sertifikat', form=form)
+        # PERBAIKAN: Ganti 'dashboard_admin' menjadi 'dashboard'
+        return redirect(url_for('admin.dashboard'))
+    
+    # PERBAIKAN: Gunakan template 'form_sertifikat.html' yang sudah ada.
+    return render_template('admin/form_sertifikat.html', title='Tambah Sertifikat', form=form, legend='Buat Sertifikat Baru')
 
 @admin_bp.route('/sertifikat/edit/<int:sertifikat_id>', methods=['GET', 'POST'])
 @login_required
