@@ -14,17 +14,15 @@ def generate_certificate_pdf(sertifikat_obj, qr_code_img_b64):
     Menerima objek Sertifikat dan QR code base64, lalu mengembalikan
     objek PDF dalam bentuk bytes.
     """
-    # PERBAIKAN: Gunakan app_context untuk memastikan url_for berfungsi
     with current_app.app_context():
-        # Render template HTML khusus untuk PDF
         html_string = render_template(
             'sertifikat/pdf_template.html',
             sertifikat=sertifikat_obj,
             qr_code_img_b64=qr_code_img_b64
         )
     
-    # Buat PDF dari HTML
-    # Tidak perlu base_url jika sudah menggunakan _external=True di url_for
+    # PERBAIKAN 3: Berikan base_url agar weasyprint dapat menemukan file statis.
+    # Ini sangat penting untuk lingkungan produksi seperti Railway.
     base_url = current_app.root_path
     pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
     return pdf_bytes
