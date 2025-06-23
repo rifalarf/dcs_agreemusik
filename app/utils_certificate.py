@@ -25,7 +25,8 @@ def generate_certificate_pdf(sertifikat_obj, qr_code_img_b64):
     
     # Buat PDF dari HTML
     # Tidak perlu base_url jika sudah menggunakan _external=True di url_for
-    pdf_bytes = HTML(string=html_string).write_pdf()
+    base_url = current_app.root_path
+    pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
     return pdf_bytes
 
 def get_font_path(font_name):

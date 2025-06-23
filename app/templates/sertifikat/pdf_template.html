@@ -132,7 +132,8 @@
         <div class="qr-label">s.id/agreemusik</div>
       </div>
       <div class="footer-right">
-        <img src="{{ url_for('static', filename='images/tandatangan/direktur/shofia.png', _external=True) }}" alt="TTD" class="sign-image">
+        <!-- PERBAIKAN: Hapus _external=True -->
+        <img src="{{ url_for('static', filename='images/tandatangan/direktur/shofia.png') }}" alt="TTD" class="sign-image">
           <div class="sign-box"></div>
         <div class="sign-name">{{ sertifikat.penandatangan }}</div>
         <div class="position-ag">DIREKTUR AGREE MUSIK</div>
