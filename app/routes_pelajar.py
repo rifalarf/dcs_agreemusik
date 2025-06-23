@@ -20,6 +20,20 @@ def list_sertifikat_pelajar():
     sertifikats = Sertifikat.query.filter_by(user_id=current_user.id).order_by(Sertifikat.tanggal_terbit.desc()).all()
     return render_template('pelajar/list_sertifikat_pelajar.html', title='Daftar Sertifikat Saya', sertifikats=sertifikats)
 
+@pelajar_bp.route('/sertifikat/detail/<int:sertifikat_id>')
+@login_required
+def detail_sertifikat_pelajar(sertifikat_id):
+    """Menampilkan detail sebuah sertifikat untuk pelajar."""
+    sertifikat = Sertifikat.query.filter_by(id=sertifikat_id, user_id=current_user.id).first_or_404()
+    
+    # Logika untuk membuat QR code (sama seperti di admin)
+    qr_code_img_b64 = None
+    if sertifikat.signature_hash:
+        from .utils_crypto import generate_qr_code_from_signature_text
+        qr_code_img_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
+
+    return render_template('pelajar/detail_sertifikat_pelajar.html', title='Detail Sertifikat', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
+
 @pelajar_bp.route('/sertifikat/lihat/<int:sertifikat_id>')
 @login_required
 def lihat_sertifikat(sertifikat_id):
