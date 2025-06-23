@@ -8,9 +8,17 @@ pelajar_bp = Blueprint('pelajar', __name__, url_prefix='/pelajar')
 @pelajar_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Menampilkan dashboard pelajar dengan daftar sertifikat mereka."""
+    """Menampilkan dashboard pelajar dengan ringkasan."""
+    # PERBAIKAN: Hanya hitung jumlah sertifikat untuk efisiensi
+    jumlah_sertifikat = Sertifikat.query.filter_by(user_id=current_user.id).count()
+    return render_template('pelajar/dashboard.html', title='Dashboard Pelajar', jumlah_sertifikat=jumlah_sertifikat)
+
+@pelajar_bp.route('/sertifikat')
+@login_required
+def list_sertifikat_pelajar():
+    """Menampilkan daftar semua sertifikat milik pelajar yang sedang login."""
     sertifikats = Sertifikat.query.filter_by(user_id=current_user.id).order_by(Sertifikat.tanggal_terbit.desc()).all()
-    return render_template('pelajar/dashboard.html', title='Dashboard Pelajar', sertifikats=sertifikats)
+    return render_template('pelajar/list_sertifikat_pelajar.html', title='Daftar Sertifikat Saya', sertifikats=sertifikats)
 
 @pelajar_bp.route('/sertifikat/lihat/<int:sertifikat_id>')
 @login_required
