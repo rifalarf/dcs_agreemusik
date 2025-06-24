@@ -71,76 +71,67 @@
         </h2>
         {% if result == 'VALID' and verified_data %}
             <p>Integritas file dan tanda tangan digital telah berhasil diverifikasi.</p>
-            <div class="mt-4 pt-4 border-t border-green-200">
-                <h3 class="font-semibold text-lg mb-2">Data Terverifikasi dari Database:</h3>
-                <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <div class="md:col-span-2"><dt class="font-medium text-gray-500">Nomor ID</dt><dd class="font-mono">{{ verified_data.id_sertifikat }}</dd></div>
-                    <div><dt class="font-medium text-gray-500">Nama Penerima</dt><dd>{{ verified_data.pemilik.nama_lengkap }}</dd></div>
-                    <div><dt class="font-medium text-gray-500">Spesialis</dt><dd>{{ verified_data.spesialis }}</dd></div>
-                    <div><dt class="font-medium text-gray-500">Tanggal Terbit</dt><dd>{{ verified_data.tanggal_terbit.strftime('%d %B %Y') }}</dd></div>
-                    <div><dt class="font-medium text-gray-500">Penandatangan</dt><dd>{{ verified_data.penandatangan }}</dd></div>
-                </dl>
+            <div class="mt-4 pt-4 border-t border-gray-300">
+                <p><strong>Nomor Sertifikat:</strong> {{ verified_data.id_sertifikat }}</p>
+                <p><strong>Nama Penerima:</strong> {{ verified_data.pemilik.nama_lengkap }}</p>
+                <p><strong>Spesialis:</strong> {{ verified_data.spesialis }}</p>
+                <p><strong>Tanggal Terbit:</strong> {{ verified_data.tanggal_terbit_id }}</p>
             </div>
         {% elif result != 'VALID' %}
-            <p>Tanda tangan digital tidak cocok atau terjadi kesalahan. Pastikan data yang diinput sudah benar atau file PDF tidak dimodifikasi.</p>
+            <p>Tanda tangan digital tidak cocok atau data sertifikat mungkin telah diubah. Pastikan semua data yang dimasukkan benar.</p>
         {% endif %}
     </div>
     {% endif %}
 </div>
-{% endblock %}
 
-{% block scripts_extra %}
+{# --- PERBAIKAN: Tambahkan blok skrip di sini --- #}
+{% block scripts %}
 {{ super() }}
+<!-- 1. Impor library pemindai QR -->
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     const startScanBtn = document.getElementById('start-scan-btn');
-    const qrReaderDiv = document.getElementById('qr-reader');
+    const qrReaderContainer = document.getElementById('qr-reader');
     const qrReaderStatus = document.getElementById('qr-reader-status');
     const qrContentTextarea = document.getElementById('qr_content_textarea');
-    let html5QrcodeScanner = null;
 
-    function onScanSuccess(decodedText, decodedResult) {
-        qrContentTextarea.value = decodedText;
-        qrReaderStatus.innerHTML = `<span class="text-green-600 font-semibold">Scan Berhasil!</span>`;
-        if (html5QrcodeScanner && html5QrcodeScanner.getState() === 2) { // 2 is SCANNING
-            html5QrcodeScanner.stop().then(() => {
-                qrReaderDiv.classList.add('hidden');
-            }).catch(err => console.error("Gagal menghentikan scanner:", err));
-        }
-    }
+    if (startScanBtn && qrReaderContainer && qrContentTextarea) {
+        // 2. Buat instance pemindai baru
+        const html5QrCode = new Html5Qrcode("qr-reader");
 
-    function onScanFailure(error) {
-        // Tidak melakukan apa-apa, agar scan terus berjalan
-    }
-
-    startScanBtn.addEventListener('click', () => {
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5Qrcode("qr-reader");
-        }
-
-        if (html5QrcodeScanner.getState() === 2) { // Jika sedang scan, hentikan
-            html5QrcodeScanner.stop().then(() => {
-                qrReaderDiv.classList.add('hidden');
-                qrReaderStatus.textContent = '';
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            // 3. Jika berhasil, isi textarea dan hentikan kamera
+            console.log(`Scan result: ${decodedText}`);
+            qrContentTextarea.value = decodedText;
+            
+            html5QrCode.stop().then(ignore => {
+                qrReaderContainer.classList.add('hidden');
+                qrReaderStatus.textContent = 'QR Code berhasil dipindai!';
+                qrReaderStatus.style.color = 'green';
+            }).catch(err => {
+                console.error("Gagal menghentikan pemindai.", err);
             });
-        } else {
-            qrReaderDiv.classList.remove('hidden');
+        };
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // 4. Tambahkan event listener ke tombol kamera
+        startScanBtn.addEventListener('click', () => {
+            qrReaderContainer.classList.remove('hidden');
             qrReaderStatus.textContent = 'Arahkan kamera ke QR Code...';
-            html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
-                onScanSuccess,
-                onScanFailure
-            ).catch(err => {
-                qrReaderStatus.innerHTML = `<span class="text-red-600">Error kamera: ${err}</span>`;
-                qrReaderDiv.classList.add('hidden');
-            });
-        }
-    });
+            qrReaderStatus.style.color = 'inherit';
+
+            // 5. Mulai pemindai
+            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+                .catch(err => {
+                    qrReaderStatus.textContent = `Error: Tidak dapat memulai kamera. ${err}`;
+                    qrReaderStatus.style.color = 'red';
+                    console.error("Gagal memulai pemindai.", err);
+                });
+        });
+    }
 });
 </script>
 {% endblock %}
