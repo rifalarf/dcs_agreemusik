@@ -84,7 +84,10 @@
     {% endif %}
 </div>
 
-{# --- PERBAIKAN: Tambahkan blok skrip di sini --- #}
+{# PERBAIKAN: Tambahkan endblock yang hilang di sini untuk menutup blok 'content' #}
+{% endblock %}
+
+{# --- Blok skrip yang sudah benar --- #}
 {% block scripts %}
 {{ super() }}
 <!-- 1. Impor library pemindai QR -->
