@@ -31,7 +31,10 @@
             <p class="text-sm text-gray-600 mb-4">Isi semua field di bawah ini persis seperti yang tertera pada sertifikat.</p>
             {{ render_field(form.id_sertifikat, placeholder="Nomor pada sertifikat") }}
             {{ render_field(form.nama_penerima, placeholder="Nama lengkap penerima") }}
-            {{ render_field(form.spesialis, placeholder="Spesialis yang tertera") }}
+            {# PERBAIKAN: Hapus placeholder karena ini adalah dropdown #}
+            {{ render_field(form.spesialis) }}
+            {# PERBAIKAN: Tambahkan field untuk level spesialis #}
+            {{ render_field(form.level_spesialis) }}
             {{ render_field(form.tanggal_terbit, type="date") }}
             {{ render_field(form.penandatangan, placeholder="Lembaga/pihak penandatangan") }}
             

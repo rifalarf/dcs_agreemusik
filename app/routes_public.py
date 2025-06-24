@@ -63,10 +63,23 @@ def verify_certificate():
                     pass
                 mock_sertifikat_obj = MockSertifikat()
                 
-                # PERBAIKAN: Gunakan .strip() untuk membersihkan whitespace di awal/akhir input
                 mock_sertifikat_obj.id_sertifikat = form.id_sertifikat.data.strip()
-                mock_sertifikat_obj.spesialis = form.spesialis.data.strip()
-                mock_sertifikat_obj.tanggal_terbit = form.tanggal_terbit.data # Tanggal tidak perlu di-strip
+                
+                # --- PERBAIKAN KRUSIAL DI SINI ---
+                # Gabungkan spesialis dan level menjadi satu string, sama seperti saat sertifikat dibuat.
+                spesialis_val = form.spesialis.data.strip()
+                level_val = form.level_spesialis.data.strip()
+                
+                if spesialis_val and level_val:
+                    # Format gabungan harus sama persis dengan saat sertifikat dibuat
+                    mock_sertifikat_obj.spesialis = f"{spesialis_val} - {level_val}"
+                elif spesialis_val:
+                    mock_sertifikat_obj.spesialis = spesialis_val
+                else:
+                    mock_sertifikat_obj.spesialis = ""
+                # ------------------------------------
+
+                mock_sertifikat_obj.tanggal_terbit = form.tanggal_terbit.data
                 mock_sertifikat_obj.penandatangan = form.penandatangan.data.strip()
                 
                 # Buat objek user tiruan untuk nama lengkap

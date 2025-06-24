@@ -12,9 +12,11 @@ SPESIALIS_CHOICES = [('', 'Pilih Spesialis (Opsional)')] + \
                       ("KENDANG", "KENDANG"),
                       ('ISI_SENDIRI', 'Isi Sendiri...')]
 
-LEVEL_CHOICES = [('', 'Pilih Level (Opsional)')] + \
-                [("PEMULA", "PEMULA"), ("MENENGAH", "MENENGAH"), ("AKHIR", "AKHIR"),
-                 ('ISI_SENDIRI', 'Isi Sendiri...')]
+# TAMBAHKAN INI: Konstanta untuk pilihan level
+LEVEL_CHOICES = [
+    ('', '- Pilih Level -'), ('Dasar', 'Dasar'), ('Menengah', 'Menengah'), 
+    ('Lanjutan', 'Lanjutan'), ('Akhir', 'Akhir')
+]
 
 
 class LoginForm(FlaskForm):
@@ -126,7 +128,9 @@ class VerifyCertificateForm(FlaskForm):
     # Opsi 2: Input Manual
     id_sertifikat = StringField('Nomor Sertifikat (Manual)', validators=[Optional()])
     nama_penerima = StringField('Nama Penerima (Manual)', validators=[Optional()])
-    spesialis = StringField('Spesialis (Manual)', validators=[Optional()])
+    spesialis = SelectField('Spesialis (Manual)', choices=SPESIALIS_CHOICES, validators=[Optional()])
+    # PERBAIKAN: Tambahkan field level_spesialis
+    level_spesialis = SelectField('Level Spesialis (Manual)', choices=LEVEL_CHOICES, validators=[Optional()])
     tanggal_terbit = DateField('Tanggal Terbit (Manual)', format='%Y-%m-%d', validators=[Optional()])
     penandatangan = StringField('Penandatangan (Manual)', validators=[Optional()])
     qr_content = TextAreaField('Isi QR Code / Signature (Manual)', validators=[Optional()])
