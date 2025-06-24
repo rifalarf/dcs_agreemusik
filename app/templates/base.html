@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% if title %}{{ title }} - {% endif %}Sertifikat Digital{% endblock %}</title>
+    <title>{% block title %}Sistem Sertifikat Digital{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Tambahkan CSS kustom Anda di sini jika ada -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% block head_extra %}{% endblock %}
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-100 font-sans">
+
     {% block body_content %}{% endblock %}
-    {% block scripts_extra %}{% endblock %}
+
+    {# --- PERBAIKAN: Tambahkan blok skrip di sini --- #}
+    {# Ini akan mengizinkan template turunan untuk menyisipkan JavaScript. #}
+    {% block scripts %}{% endblock %}
+    
 </body>
 </html>
