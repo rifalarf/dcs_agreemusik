@@ -1,56 +1,71 @@
 from flask import Flask
+from config import Config, TestingConfig # <-- Impor TestingConfig
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
-from config import Config
 import os
-from datetime import datetime
 
+# --- PERBAIKAN: Inisialisasi ekstensi di sini, tanpa aplikasi ---
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = 'auth.login'
-login_manager.login_message_category = 'info'
 csrf = CSRFProtect()
+login_manager.login_view = 'main.login' # Arahkan ke halaman login
+login_manager.login_message = 'Silakan login untuk mengakses halaman ini.'
+login_manager.login_message_category = 'info'
 
-from flask_migrate import Migrate
+# --- Tambahkan dictionary untuk memetakan nama konfigurasi ke kelas ---
+config_by_name = dict(
+    default=Config,
+    testing=TestingConfig
+)
 
-@login_manager.user_loader
-def load_user(user_id):
-    from .models import User
-    return User.query.get(int(user_id))
-
-def create_app(config_class=Config):
+def create_app(config_name='default'): # <-- Ubah parameter menjadi nama config
+    """Application Factory Function"""
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    
+    # --- Gunakan nama untuk memilih objek konfigurasi ---
+    config_object = config_by_name.get(config_name, Config)
+    app.config.from_object(config_object)
 
-    # --- TAMBAHKAN BARIS INI UNTUK MENGAKTIFKAN {% do %} ---
+    # --- PERBAIKAN: Aktifkan ekstensi 'do' untuk Jinja2 ---
     app.jinja_env.add_extension('jinja2.ext.do')
-    # --------------------------------------------------------
 
-    instance_path = os.path.join(app.root_path, '..', 'instance')
-    if not os.path.exists(instance_path):
-        os.makedirs(instance_path)
-
+    # --- PERBAIKAN: Hubungkan ekstensi dengan aplikasi di sini ---
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
-    migrate = Migrate(app, db)
 
-    @app.context_processor
-    def inject_now():
-        return {'current_year': datetime.utcnow().year}
+    # Import model di sini agar user_loader dapat menemukannya
+    from .models import User
 
-    # Import dan daftarkan Blueprints
+    @login_manager.user_loader
+    def load_user(user_id):
+        # Sekarang ini akan bekerja karena 'db' sudah terhubung dengan 'app'
+        return User.query.get(int(user_id))
+
+    # --- Registrasi Blueprint ---
+    from .routes_main import main_bp
+    app.register_blueprint(main_bp)
+
     from .routes_auth import auth_bp
-    from .routes_admin import admin_bp
-    from .routes_pelajar import pelajar_bp
-    from .routes_public import public_bp
-    from . import routes_main
+    app.register_blueprint(auth_bp)
 
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+    from .routes_admin import admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(pelajar_bp, url_prefix='/pelajar')
-    app.register_blueprint(public_bp, url_prefix='/public')
-    app.register_blueprint(routes_main.main_bp)
+
+    from .routes_pelajar import pelajar_bp
+    app.register_blueprint(pelajar_bp)
+
+    from .routes_public import public_bp
+    app.register_blueprint(public_bp)
+
+    # Pastikan folder instance ada
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
 
     return app

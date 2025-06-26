@@ -1,19 +1,74 @@
-from flask import (Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, jsonify)
-from flask_login import login_required, current_user
-from .decorators import admin_required
-# --- PASTIKAN BARIS IMPOR INI ADA DAN BENAR ---
-from .forms import PelajarForm, SertifikatForm, SPESIALIS_CHOICES, LEVEL_CHOICES
-# ----------------------------------------------
-from .models import User, Sertifikat
-from . import db
-from .utils_crypto import load_private_key, generate_qr_code_from_signature_text
-# PERBAIKAN: Impor fungsi yang benar
-from .utils_certificate import generate_certificate_pdf
+import json
 import os
-import hashlib # Pastikan hashlib diimpor
+import base64
+import datetime
+import hashlib
+from flask import (Blueprint, flash, redirect, render_template, request,
+                   url_for, current_app, send_file, jsonify)
+from flask_login import login_required
+
+from . import db
+from .decorators import admin_required
+from .forms import PelajarForm, SertifikatForm
+from .models import Sertifikat, User
+from .utils_crypto import create_data_string, sign_data, generate_qr_code_from_signature_text, load_private_key
+from .utils_certificate import generate_certificate_pdf
+from cryptography.hazmat.primitives import serialization
 
 admin_bp = Blueprint('admin', __name__)
 
+def generate_next_sertifikat_id():
+    """Membuat ID sertifikat berikutnya dengan format AGXXX."""
+    last_sertifikat = Sertifikat.query.filter(Sertifikat.id_sertifikat.like('AG%')).order_by(Sertifikat.id.desc()).first()
+    if last_sertifikat:
+        last_num_str = ''.join(filter(str.isdigit, last_sertifikat.id_sertifikat))
+        last_num = int(last_num_str) if last_num_str else 0
+        new_num = last_num + 1
+    else:
+        new_num = 1
+    return f"AG{new_num:03d}"
+
+# --- PERBAIKAN TOTAL: Logika eksplisit dipindahkan ke sini ---
+def process_and_generate_pdf(sertifikat, private_key_obj):
+    """Menandatangani sertifikat, membuat QR, dan menghasilkan file PDF secara eksplisit."""
+    
+    # Langkah 1: Buat string data dari objek sertifikat.
+    data_to_sign = create_data_string(sertifikat)
+    if not data_to_sign:
+        raise ValueError("Data untuk ditandatangani tidak boleh kosong.")
+    sertifikat.data_string_untuk_sign = data_to_sign
+
+    # Langkah 2: Buat signature hash dari string data.
+    signature = sign_data(data_to_sign, private_key_obj)
+    if not signature:
+        raise ValueError("Gagal menghasilkan signature hash.")
+    sertifikat.signature_hash = signature
+
+    # Langkah 3: Buat QR code dari signature hash.
+    qr_image_bytes = generate_qr_code_from_signature_text(signature)
+    if not qr_image_bytes:
+        raise ValueError("Gagal membuat gambar QR code dari signature.")
+    sertifikat.qr_code_img = qr_image_bytes
+    
+    # Langkah 4: Catat waktu penandatanganan.
+    sertifikat.tanggal_sign = datetime.datetime.utcnow()
+
+    # Langkah 5: Buat file PDF menggunakan WeasyPrint.
+    qr_b64 = base64.b64encode(sertifikat.qr_code_img).decode('utf-8')
+    pdf_bytes = generate_certificate_pdf(sertifikat, qr_b64)
+    
+    # --- PERBAIKAN: Hitung dan simpan hash dari PDF yang di-generate ---
+    sertifikat.pdf_file_hash = hashlib.sha256(pdf_bytes).hexdigest()
+
+    pdf_dir = os.path.join(current_app.instance_path, 'sertifikat_pdf')
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_path = os.path.join(pdf_dir, f"{sertifikat.id_sertifikat}.pdf")
+    with open(pdf_path, 'wb') as f:
+        f.write(pdf_bytes)
+    
+    sertifikat.pdf_file_path = pdf_path
+
+# --- ROUTES (Menggunakan helper di atas) ---
 @admin_bp.route('/dashboard')
 @login_required
 @admin_required
@@ -35,45 +90,21 @@ def manage_pelajar():
 def tambah_pelajar():
     form = PelajarForm()
     if form.validate_on_submit():
-        existing_user_by_username = User.query.filter_by(username=form.username.data).first()
-        existing_user_by_email = User.query.filter_by(email=form.email.data).first()
-        if existing_user_by_username:
-            flash('Username sudah digunakan.', 'danger')
-        elif existing_user_by_email:
-            flash('Email sudah digunakan.', 'danger')
-        else:
-            if not form.password.data: # Jika password tidak diisi untuk user baru
-                flash('Password wajib diisi untuk pengguna baru.', 'warning')
-                return render_template('admin/form_pelajar.html', title='Tambah Pelajar', form=form, legend='Tambah Pelajar Baru')
-
-            # Ambil nilai spesialis
-            spesialis_value = form.spesialis.data
-            if spesialis_value == 'ISI_SENDIRI':
-                spesialis_value = form.spesialis_custom.data or None
-            elif not spesialis_value:
-                spesialis_value = None
-
-            # Ambil nilai level
-            level_value = form.level.data
-            if level_value == 'ISI_SENDIRI':
-                level_value = form.level_custom.data or None
-            elif not level_value:
-                level_value = None
-
-            user = User(
-                username=form.username.data,
-                email=form.email.data,
-                nama_lengkap=form.nama_lengkap.data,
-                role=form.role.data,
-                password=form.password.data, # Password sudah tidak di-hash
-                spesialis=spesialis_value,
-                spesialis_level=level_value
-            )
-            db.session.add(user)
-            db.session.commit()
-            flash(f'Pelajar {user.nama_lengkap} berhasil ditambahkan.', 'success')
-            return redirect(url_for('admin.manage_pelajar'))
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            nama_lengkap=form.nama_lengkap.data,
+            role=form.role.data,
+            spesialis=form.spesialis.data or None
+        )
+        if form.password.data:
+            user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash(f'Pelajar {user.nama_lengkap} berhasil ditambahkan.', 'success')
+        return redirect(url_for('admin.manage_pelajar'))
     return render_template('admin/form_pelajar.html', title='Tambah Pelajar', form=form, legend='Tambah Pelajar Baru')
+
 
 @admin_bp.route('/pelajar/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -81,30 +112,14 @@ def tambah_pelajar():
 def edit_pelajar(user_id):
     user = User.query.get_or_404(user_id)
     form = PelajarForm(original_username=user.username, original_email=user.email)
-
     if form.validate_on_submit():
-        # Ambil nilai spesialis
-        spesialis_value = form.spesialis.data
-        if spesialis_value == 'ISI_SENDIRI':
-            spesialis_value = form.spesialis_custom.data or None
-        elif not spesialis_value:
-            spesialis_value = None
-
-        # Ambil nilai level
-        level_value = form.level.data
-        if level_value == 'ISI_SENDIRI':
-            level_value = form.level_custom.data or None
-        elif not level_value:
-            level_value = None
-
         user.username = form.username.data
         user.email = form.email.data
         user.nama_lengkap = form.nama_lengkap.data
         user.role = form.role.data
-        user.spesialis = spesialis_value
-        user.spesialis_level = level_value
-        if form.password.data: # Jika admin mengisi password baru
-            user.password = form.password.data
+        user.spesialis = form.spesialis.data or None
+        if form.password.data:
+            user.set_password(form.password.data)
         db.session.commit()
         flash(f'Data pelajar {user.nama_lengkap} berhasil diperbarui.', 'success')
         return redirect(url_for('admin.manage_pelajar'))
@@ -113,25 +128,7 @@ def edit_pelajar(user_id):
         form.email.data = user.email
         form.nama_lengkap.data = user.nama_lengkap
         form.role.data = user.role
-
-        # Logika untuk mengisi form.spesialis dan form.spesialis_custom
-        standard_spesialis = [choice[0] for choice in SPESIALIS_CHOICES if choice[0] and choice[0] != 'ISI_SENDIRI']
-        if user.spesialis and user.spesialis not in standard_spesialis:
-            form.spesialis.data = 'ISI_SENDIRI'
-            form.spesialis_custom.data = user.spesialis
-        else:
-            form.spesialis.data = user.spesialis or ''
-
-        # Logika untuk mengisi form.level dan form.level_custom
-        standard_levels = [choice[0] for choice in LEVEL_CHOICES if choice[0] and choice[0] != 'ISI_SENDIRI']
-        if user.spesialis_level and user.spesialis_level not in standard_levels:
-            form.level.data = 'ISI_SENDIRI'
-            form.level_custom.data = user.spesialis_level
-        else:
-            form.level.data = user.spesialis_level or ''
-
-        form.pelajar_id.data = user.id
-
+        form.spesialis.data = user.spesialis
     return render_template('admin/form_pelajar.html', title='Edit Pelajar', form=form, legend=f'Edit Pelajar: {user.nama_lengkap}')
 
 @admin_bp.route('/pelajar/hapus/<int:user_id>', methods=['POST'])
@@ -155,7 +152,7 @@ def hapus_pelajar(user_id):
 @admin_required
 def manage_sertifikat():
     page = request.args.get('page', 1, type=int)
-    sertifikats = Sertifikat.query.order_by(Sertifikat.tanggal_terbit.desc()).paginate(page=page, per_page=10)
+    sertifikats = Sertifikat.query.order_by(Sertifikat.id.desc()).paginate(page=page, per_page=10)
     return render_template('admin/manage_sertifikat.html', title='Manajemen Sertifikat', sertifikats=sertifikats)
 
 @admin_bp.route('/sertifikat/tambah', methods=['GET', 'POST'])
@@ -164,116 +161,80 @@ def manage_sertifikat():
 def tambah_sertifikat():
     form = SertifikatForm()
     if form.validate_on_submit():
-        private_key_obj = load_private_key(current_app.config['PRIVATE_KEY_PATH'])
-        if not private_key_obj:
-            flash('Gagal memuat kunci privat...', 'danger')
-            return redirect(url_for('admin.manage_sertifikat'))
-
-        user_penerima = User.query.get(int(form.user_id.data))
-        if not user_penerima or user_penerima.role != 'pelajar':
-            flash('Pelajar tidak valid.', 'danger')
-            return redirect(url_for('admin.tambah_sertifikat'))
-
-        # PANGGIL FUNGSI GENERATE ID DI SINI
-        new_id = Sertifikat.generate_next_id()
-
-        sertifikat = Sertifikat(
-            id_sertifikat=new_id, # Gunakan ID yang baru dibuat
-            pemilik=user_penerima,
+        new_sertifikat = Sertifikat(
+            id_sertifikat=generate_next_sertifikat_id(), user_id=form.user_id.data.id,
             spesialis=form.spesialis.data,
-            tanggal_terbit=form.tanggal_terbit.data,
-            penandatangan=form.penandatangan.data
+            tanggal_terbit=form.tanggal_terbit.data, penandatangan=form.penandatangan.data
         )
+        db.session.add(new_sertifikat)
+        db.session.flush()
+
+        try:
+            private_key_path = current_app.config.get('PRIVATE_KEY_PATH')
+            # --- PERBAIKAN: Gunakan fungsi loader yang konsisten dari utils ---
+            private_key_obj = load_private_key(private_key_path)
+            
+            if not private_key_obj:
+                flash('Gagal memuat kunci privat. Operasi tidak dapat dilanjutkan.', 'danger')
+                return redirect(url_for('admin.tambah_sertifikat'))
+
+            process_and_generate_pdf(new_sertifikat, private_key_obj)
+            
+            db.session.commit()
+            flash(f'Sertifikat {new_sertifikat.id_sertifikat} berhasil dibuat.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Gagal memproses sertifikat: {e}")
+            flash(f"Gagal memproses sertifikat: {e}", "danger")
+            return redirect(url_for('admin.tambah_sertifikat'))
         
-        sertifikat.prepare_and_sign(current_app.config, private_key_obj)
-        
-        # PERBAIKAN: Gunakan alur baru yang berbasis HTML/weasyprint
-        qr_code_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
-        pdf_bytes = generate_certificate_pdf(sertifikat, qr_code_b64)
-        
-        sertifikat.pdf_file_hash = hashlib.sha3_256(pdf_bytes).hexdigest()
-        
-        # Simpan file PDF yang baru
-        pdf_dir = os.path.join(current_app.instance_path, 'sertifikat_pdf')
-        os.makedirs(pdf_dir, exist_ok=True)
-        pdf_filename = f"{sertifikat.id_sertifikat}.pdf"
-        pdf_path = os.path.join(pdf_dir, pdf_filename)
-        with open(pdf_path, 'wb') as f:
-            f.write(pdf_bytes)
-        
-        sertifikat.pdf_file_path = pdf_path
-        db.session.add(sertifikat)
-        db.session.commit()
-        flash('Sertifikat berhasil ditambahkan.', 'success')
-        # PERBAIKAN: Ganti 'dashboard_admin' menjadi 'dashboard'
-        return redirect(url_for('admin.dashboard'))
-    
-    # PERBAIKAN: Gunakan template 'form_sertifikat.html' yang sudah ada.
-    return render_template('admin/form_sertifikat.html', title='Tambah Sertifikat', form=form, legend='Buat Sertifikat Baru')
+        return redirect(url_for('admin.manage_sertifikat'))
+
+    pelajar_users = User.query.filter_by(role='pelajar').all()
+    pelajar_data = {user.id: {'spesialis': user.spesialis} for user in pelajar_users}
+    pelajar_data_json = json.dumps(pelajar_data)
+    return render_template('admin/form_sertifikat.html', title='Buat Sertifikat Baru', form=form, pelajar_data_json=pelajar_data_json)
+
 
 @admin_bp.route('/sertifikat/edit/<int:sertifikat_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_sertifikat(sertifikat_id):
     sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
-    # PERUBAHAN: Berikan 'original_sertifikat' ke form
-    form = SertifikatForm(original_sertifikat=sertifikat, obj=sertifikat)
-
+    form = SertifikatForm(original_sertifikat=sertifikat)
     if form.validate_on_submit():
-        # Hapus file PDF lama jika ada, sebelum membuat yang baru
-        if sertifikat.pdf_file_path and os.path.exists(sertifikat.pdf_file_path):
-            try:
-                os.remove(sertifikat.pdf_file_path)
-            except OSError as e:
-                current_app.logger.error(f"Gagal menghapus PDF lama ({sertifikat.pdf_file_path}): {e}")
-                flash('Gagal menghapus file PDF lama, proses pembaruan dihentikan.', 'danger')
-                return redirect(url_for('admin.edit_sertifikat', sertifikat_id=sertifikat.id))
-
-        # Update data sertifikat dari form
-        sertifikat.user_id = int(form.user_id.data)
-        # JANGAN UPDATE ID SERTIFIKAT, BIARKAN TETAP
-        # sertifikat.id_sertifikat = form.id_sertifikat.data 
+        sertifikat.user_id = form.user_id.data.id
         sertifikat.spesialis = form.spesialis.data
         sertifikat.tanggal_terbit = form.tanggal_terbit.data
         sertifikat.penandatangan = form.penandatangan.data
-
-        # Lakukan proses penandatanganan ulang
-        private_key_obj = load_private_key(current_app.config['PRIVATE_KEY_PATH'])
-        if not private_key_obj:
-            flash('Gagal memuat kunci privat untuk penandatanganan ulang.', 'danger')
-            return redirect(url_for('admin.edit_sertifikat', sertifikat_id=sertifikat.id))
         
-        sertifikat.prepare_and_sign(current_app.config, private_key_obj)
+        try:
+            private_key_path = current_app.config.get('PRIVATE_KEY_PATH')
+            with open(private_key_path, "rb") as key_file:
+                private_key_obj = serialization.load_pem_private_key(key_file.read(), password=None)
+            
+            process_and_generate_pdf(sertifikat, private_key_obj)
+            
+            db.session.commit()
+            flash(f'Sertifikat {sertifikat.id_sertifikat} berhasil diperbarui.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Gagal memperbarui sertifikat: {e}")
+            flash(f"Gagal memperbarui sertifikat: {e}", "danger")
+            return redirect(url_for('admin.edit_sertifikat', sertifikat_id=sertifikat_id))
 
-        # Buat ulang QR code dengan signature baru
-        qr_code_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
-
-        # Buat ulang file PDF
-        pdf_bytes = generate_certificate_pdf(sertifikat, qr_code_b64)
-
-        # HITUNG DAN SIMPAN HASH BARU DARI FILE PDF
-        sertifikat.pdf_file_hash = hashlib.sha3_256(pdf_bytes).hexdigest()
-
-        # Simpan file PDF yang baru
-        pdf_dir = os.path.join(current_app.instance_path, 'sertifikat_pdf')
-        os.makedirs(pdf_dir, exist_ok=True)
-        pdf_filename = f'{sertifikat.id_sertifikat.replace("/", "_")}.pdf'
-        pdf_path = os.path.join(pdf_dir, pdf_filename)
-        with open(pdf_path, 'wb') as f:
-            f.write(pdf_bytes)
-
-        # Update path PDF di database
-        sertifikat.pdf_file_path = pdf_path
-
-        db.session.commit()
-        flash(f'Sertifikat {sertifikat.id_sertifikat} berhasil diperbarui dan PDF telah dibuat ulang.', 'success')
-        return redirect(url_for('admin.detail_sertifikat_admin', sertifikat_id=sertifikat.id))
-
+        return redirect(url_for('admin.manage_sertifikat'))
     elif request.method == 'GET':
-        # ... (logika untuk mengisi form saat GET tetap sama) ...
-        pass
+        form.user_id.data = sertifikat.pemilik
+        form.spesialis.data = sertifikat.spesialis
+        form.tanggal_terbit.data = sertifikat.tanggal_terbit
+        form.penandatangan.data = sertifikat.penandatangan
+        form.id_sertifikat.data = sertifikat.id_sertifikat
 
-    return render_template('admin/form_sertifikat.html', title='Edit Sertifikat', form=form, legend=f'Edit Sertifikat: {sertifikat.id_sertifikat}')
+    pelajar_users = User.query.filter_by(role='pelajar').all()
+    pelajar_data = {user.id: {'spesialis': user.spesialis} for user in pelajar_users}
+    pelajar_data_json = json.dumps(pelajar_data)
+    return render_template('admin/form_sertifikat.html', title='Edit Sertifikat', form=form, pelajar_data_json=pelajar_data_json)
 
 @admin_bp.route('/sertifikat/detail/<int:sertifikat_id>')
 @login_required
@@ -283,8 +244,10 @@ def detail_sertifikat_admin(sertifikat_id):
     sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
     qr_code_img_b64 = None
     if sertifikat.signature_hash:
-        # PERBAIKAN: Gunakan fungsi baru yang hanya memerlukan signature hash
-        qr_code_img_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
+        # PERBAIKAN: Generate bytes dan encode ke base64 untuk ditampilkan di HTML
+        qr_bytes = generate_qr_code_from_signature_text(sertifikat.signature_hash)
+        if qr_bytes:
+            qr_code_img_b64 = base64.b64encode(qr_bytes).decode('utf-8')
     
     return render_template('admin/detail_sertifikat.html', title='Detail Sertifikat', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
 
@@ -321,10 +284,11 @@ def cetak_sertifikat_admin(sertifikat_id):
 @admin_required
 def hapus_sertifikat(sertifikat_id):
     sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
-    id_sert_hapus = sertifikat.id_sertifikat
+    if sertifikat.pdf_file_path and os.path.exists(sertifikat.pdf_file_path):
+        os.remove(sertifikat.pdf_file_path)
     db.session.delete(sertifikat)
     db.session.commit()
-    flash(f'Sertifikat {id_sert_hapus} berhasil dihapus.', 'success')
+    flash(f'Sertifikat {sertifikat.id_sertifikat} berhasil dihapus.', 'success')
     return redirect(url_for('admin.manage_sertifikat'))
 
 @admin_bp.route('/pelajar/<int:user_id>/get_spesialis', methods=['GET'])
@@ -334,13 +298,6 @@ def get_pelajar_spesialis(user_id):
     """Endpoint API untuk mendapatkan data spesialis pelajar."""
     user = User.query.get(user_id)
     if user:
-        spesialis_text = ""
-        if user.spesialis and user.spesialis_level:
-            spesialis_text = f"{user.spesialis} - {user.spesialis_level}"
-        elif user.spesialis:
-            spesialis_text = user.spesialis
-        elif user.spesialis_level:
-            spesialis_text = user.spesialis_level
-        return jsonify({'spesialis': spesialis_text})
+        return jsonify({'spesialis': user.spesialis or ''})
     else:
         return jsonify({'error': 'User not found'}), 404

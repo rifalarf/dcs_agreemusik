@@ -20,3 +20,9 @@ class Config:
 
     CERTIFICATE_TEMPLATE_PATH = os.path.join(basedir, "app", "static", "images", "template.png")
     FONT_BASE_PATH = os.path.join(basedir, "app", "static", "fonts")
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    WTF_CSRF_ENABLED = False # Disable CSRF for tests
+    SECRET_KEY = 'test-secret-key'

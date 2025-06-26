@@ -1,21 +1,24 @@
 {% macro render_field(field, placeholder=None, type=None, class_="", attrs=None) %}
 <div class="mb-4">
-    {{ field.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+    {% set _attrs = attrs or {} %}
+    {# --- PERBAIKAN: Gunakan label dari attrs jika ada, jika tidak, gunakan label default field --- #}
+    {{ field.label(text=_attrs.pop('label', field.label.text), class="block text-sm font-medium text-gray-700 mb-1") }}
+    
     {% set base_class = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm " + class_ %}
 
-    {# Siapkan argumen, tambahkan attrs jika ada #}
-    {% set render_args = {'class': base_class, 'placeholder': placeholder or field.label.text} %}
-    {% if attrs %}{% do render_args.update(attrs) %}{% endif %}
+    {# Siapkan argumen, gabungkan dengan attrs yang dilewatkan #}
+    {% do _attrs.update({'class': base_class, 'placeholder': placeholder or field.label.text}) %}
 
+    {# Render field dengan argumen yang sudah disiapkan #}
     {% if type == "textarea" %}
-        {% do render_args.update({'rows': '3'}) %}
-        {{ field(**render_args) }}
+        {% do _attrs.update({'rows': '3'}) %}
+        {{ field(**_attrs) }}
     {% elif type == "date" %}
-        {% do render_args.update({'type': 'date'}) %}
-        {{ field(**render_args) }}
+        {% do _attrs.update({'type': 'date'}) %}
+        {{ field(**_attrs) }}
     {% else %}
-        {% do render_args.update({'type': type or field.type}) %}
-        {{ field(**render_args) }}
+        {% do _attrs.update({'type': type or field.type}) %}
+        {{ field(**_attrs) }}
     {% endif %}
 
     {% if field.errors %}

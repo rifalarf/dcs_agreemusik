@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, flash, current_app
 from .forms import VerifyCertificateForm
 from .models import Sertifikat
 from .utils_pdf import extract_data_from_pdf
-from .utils_crypto import load_public_key, generate_certificate_data_string, _verify
+from .utils_crypto import load_public_key, create_data_string, verify_data
 
 public_bp = Blueprint('public', __name__)
 
@@ -28,7 +28,8 @@ def verify_certificate():
                 is_valid = False
 
                 # 1. Hitung Jangkar File
-                uploaded_file_hash = hashlib.sha3_256(pdf_bytes).hexdigest()
+                # --- PERBAIKAN: Gunakan sha256 agar konsisten dengan saat pembuatan sertifikat ---
+                uploaded_file_hash = hashlib.sha256(pdf_bytes).hexdigest()
 
                 # 2. Ekstrak Jangkar Data dari QR
                 signature_from_qr = extract_data_from_pdf(pdf_bytes)
@@ -63,45 +64,33 @@ def verify_certificate():
                     pass
                 mock_sertifikat_obj = MockSertifikat()
                 
-                mock_sertifikat_obj.id_sertifikat = form.id_sertifikat.data.strip()
-                
-                # --- PERBAIKAN KRUSIAL DI SINI ---
-                # Gabungkan spesialis dan level menjadi satu string, sama seperti saat sertifikat dibuat.
-                spesialis_val = form.spesialis.data.strip()
-                level_val = form.level_spesialis.data.strip()
-                
-                if spesialis_val and level_val:
-                    # Format gabungan harus sama persis dengan saat sertifikat dibuat
-                    mock_sertifikat_obj.spesialis = f"{spesialis_val} - {level_val}"
-                elif spesialis_val:
-                    mock_sertifikat_obj.spesialis = spesialis_val
-                else:
-                    mock_sertifikat_obj.spesialis = ""
-                # ------------------------------------
-
+                # --- PERBAIKAN: Hapus .strip() untuk perbandingan data yang ketat ---
+                mock_sertifikat_obj.id_sertifikat = form.id_sertifikat.data
+                mock_sertifikat_obj.spesialis = form.spesialis.data
                 mock_sertifikat_obj.tanggal_terbit = form.tanggal_terbit.data
-                mock_sertifikat_obj.penandatangan = form.penandatangan.data.strip()
+                mock_sertifikat_obj.penandatangan = form.penandatangan.data
                 
-                # Buat objek user tiruan untuk nama lengkap
-                nama_penerima_cleaned = form.nama_penerima.data.strip()
-                mock_sertifikat_obj.pemilik = type('MockUser', (object,), {'nama_lengkap': nama_penerima_cleaned})()
+                # Buat objek user tiruan untuk nama lengkap (juga tanpa .strip())
+                mock_sertifikat_obj.pemilik = type('MockUser', (object,), {'nama_lengkap': form.nama_penerima.data})()
 
                 # Buat ulang string data dari objek tiruan
-                data_string = generate_certificate_data_string(mock_sertifikat_obj)
+                data_string = create_data_string(mock_sertifikat_obj)
                 
-                # Verifikasi signature dari form (juga di-strip) dengan data dari form
-                signature_cleaned = form.qr_content.data.strip()
-                is_valid = _verify(data_string, signature_cleaned, public_key_obj)
+                # Verifikasi signature dari form (juga tanpa .strip()) dengan data dari form
+                signature_from_form = form.qr_content.data
+                is_valid = verify_data(data_string, signature_from_form, public_key_obj)
                 
                 verification_result = "VALID" if is_valid else "TIDAK VALID"
                 flash(f'Hasil verifikasi manual: Sertifikat {verification_result}.', 'success' if is_valid else 'danger')
                 
-                # Jika valid, coba cari data asli untuk ditampilkan
+                # Jika valid, cari data asli di DB berdasarkan signature untuk keamanan
                 if is_valid:
-                    # Gunakan ID yang sudah dibersihkan untuk mencari di DB
-                    real_sertifikat = Sertifikat.query.filter_by(id_sertifikat=form.id_sertifikat.data.strip()).first()
+                    real_sertifikat = Sertifikat.query.filter_by(signature_hash=signature_from_form).first()
                     if real_sertifikat:
                         verified_data = real_sertifikat
+                    else:
+                        # Kasus anomali: signature valid secara kriptografis tapi tidak ada di DB
+                        flash('PERINGATAN: Tanda tangan digital valid, tetapi tidak terdaftar di sistem kami.', 'warning')
 
             except Exception as e:
                 flash(f'Error verifikasi manual: {e}', 'danger')

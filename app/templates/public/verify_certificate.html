@@ -28,19 +28,16 @@
 
         <div class="mb-6 p-4 border border-dashed border-gray-300 rounded-lg">
             <h2 class="text-lg font-semibold text-gray-800 mb-2">Opsi 2: Input Data Manual</h2>
-            <p class="text-sm text-gray-600 mb-4">Isi semua field di bawah ini persis seperti yang tertera pada sertifikat.</p>
+            <p class="text-sm text-gray-600 mb-4">Isi semua field di bawah ini persis seperti yang tertera pada sertifikat untuk memverifikasi keasliannya.</p>
             {{ render_field(form.id_sertifikat, placeholder="Nomor pada sertifikat") }}
             {{ render_field(form.nama_penerima, placeholder="Nama lengkap penerima") }}
-            {# PERBAIKAN: Hapus placeholder karena ini adalah dropdown #}
             {{ render_field(form.spesialis) }}
-            {# PERBAIKAN: Tambahkan field untuk level spesialis #}
-            {{ render_field(form.level_spesialis) }}
             {{ render_field(form.tanggal_terbit, type="date") }}
             {{ render_field(form.penandatangan, placeholder="Lembaga/pihak penandatangan") }}
             
             <div class="mb-4">
                 {{ form.qr_content.label(class="block text-sm font-medium text-gray-700") }}
-                <div class="mt-1 flex rounded-md shadow-sm">
+                <div class="mt-1 flex rounded-md shadow-sm border border-gray-300">
                     {# PERBAIKAN 1: Sederhanakan rendering, andalkan ID default "qr_content" #}
                     {{ form.qr_content(class="flex-1 block w-full rounded-none rounded-l-md sm:text-sm border-gray-300", placeholder="Paste teks dari QR Code di sini") }}
                     <button type="button" id="start-scan-btn" title="Pindai QR Code dengan Kamera" class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm hover:bg-gray-100">
@@ -75,7 +72,7 @@
                 <p><strong>Nomor Sertifikat:</strong> {{ verified_data.id_sertifikat }}</p>
                 <p><strong>Nama Penerima:</strong> {{ verified_data.pemilik.nama_lengkap }}</p>
                 <p><strong>Spesialis:</strong> {{ verified_data.spesialis }}</p>
-                <p><strong>Tanggal Terbit:</strong> {{ verified_data.tanggal_terbit_id }}</p>
+                <p><strong>Tanggal Terbit:</strong> {{ verified_data.tanggal_terbit.strftime('%d %B %Y') if verified_data.tanggal_terbit else '' }}</p>
             </div>
         {% elif result != 'VALID' %}
             <p>Tanda tangan digital tidak cocok atau data sertifikat mungkin telah diubah. Pastikan semua data yang dimasukkan benar.</p>

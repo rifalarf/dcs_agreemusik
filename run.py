@@ -29,17 +29,18 @@ def create_admin_command():
 
     admin_user = User(
         username=admin_username,
-        email=admin_email, # Sesuaikan jika perlu
+        email=admin_email,
         nama_lengkap=admin_nama,
-        role='admin',
-        # Simpan password langsung
-        password=admin_password
+        role='admin'
     )
-    # Hapus admin_user.set_password(admin_password)
+    # --- PERBAIKAN: Gunakan set_password untuk hashing ---
+    admin_user.set_password(admin_password)
+    # -------------------------------------------------
     db.session.add(admin_user)
     db.session.commit()
     click.echo(f"Admin user '{admin_username}' berhasil dibuat.")
 
-
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    # Menjalankan aplikasi dengan mode debug aktif
+    # Ini akan menampilkan traceback error di terminal
+    app.run(debug=True)

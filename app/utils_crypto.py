@@ -1,18 +1,17 @@
 import base64
 import hashlib
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import serialization # <-- TAMBAHKAN IMPORT INI
-from datetime import datetime
-from datetime import date # Impor 'date' dari datetime
-import qrcode
 import io
+from datetime import date, datetime
+
+import qrcode
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 
 # --- Kunci ECDSA ---
-# Kunci akan dimuat oleh fungsi yang memanggilnya dari Config
 def load_private_key(private_key_path):
+    """Memuat kunci privat dari file PEM."""
     try:
         with open(private_key_path, "rb") as key_file:
             private_key = serialization.load_pem_private_key(
@@ -28,6 +27,7 @@ def load_private_key(private_key_path):
         return None
 
 def load_public_key(public_key_path):
+    """Memuat kunci publik dari file PEM."""
     try:
         with open(public_key_path, "rb") as key_file:
             public_key = serialization.load_pem_public_key(
@@ -41,8 +41,9 @@ def load_public_key(public_key_path):
         print(f"Error memuat kunci publik: {e}")
         return None
 
-# --- Fungsi Helper Kriptografi ---
-def generate_certificate_data_string(sertifikat_obj):
+# --- Fungsi Helper Kriptografi (MODERN API) ---
+
+def create_data_string(sertifikat_obj):
     """
     Menggabungkan data sertifikat menjadi satu string standar untuk di-sign.
     PENTING: Urutan dan format field harus konsisten!
@@ -55,7 +56,6 @@ def generate_certificate_data_string(sertifikat_obj):
     elif sertifikat_obj.tanggal_terbit is not None:
         tanggal_terbit_str = str(sertifikat_obj.tanggal_terbit)
 
-    # Mengganti nama field
     return (f"{sertifikat_obj.id_sertifikat}|"
             f"{nama_pemilik}|"
             f"{sertifikat_obj.spesialis}|"
@@ -63,28 +63,31 @@ def generate_certificate_data_string(sertifikat_obj):
             f"{sertifikat_obj.penandatangan}")
 
 def hash_data(data_string):
-    """Melakukan hashing data dengan SHA3-256."""
-    return hashlib.sha3_256(data_string.encode('utf-8')).digest()
+    """Melakukan hashing data dengan SHA256."""
+    return hashlib.sha256(data_string.encode('utf-8')).digest()
 
 def sign_data_ecdsa(data_hash, private_key_obj):
-    """Menandatangani hash data menggunakan kunci privat ECDSA."""
+    """Menandatangani HASH data menggunakan kunci privat ECDSA (Modern API)."""
     if not private_key_obj:
         raise ValueError("Kunci privat tidak valid atau tidak dimuat.")
+    
+    # Tandatangani hash, bukan data mentah, dan beri tahu fungsi bahwa data sudah di-hash
     signature = private_key_obj.sign(
         data_hash,
-        ec.ECDSA(hashes.SHA256()) # PERBAIKAN: Gunakan 'hashes' yang sudah diimpor
+        ec.ECDSA(utils.Prehashed(hashes.SHA256()))
     )
     return signature
 
 def verify_signature_ecdsa(data_hash, signature_bytes, public_key_obj):
-    """Memverifikasi signature menggunakan kunci publik ECDSA."""
+    """Memverifikasi signature terhadap HASH data menggunakan kunci publik ECDSA (Modern API)."""
     if not public_key_obj:
         raise ValueError("Kunci publik tidak valid atau tidak dimuat.")
     try:
+        # Verifikasi signature terhadap hash
         public_key_obj.verify(
             signature_bytes,
             data_hash,
-            ec.ECDSA(hashes.SHA256()) # PERBAIKAN: Gunakan 'hashes' yang sudah diimpor
+            ec.ECDSA(utils.Prehashed(hashes.SHA256()))
         )
         return True
     except InvalidSignature:
@@ -93,47 +96,53 @@ def verify_signature_ecdsa(data_hash, signature_bytes, public_key_obj):
         print(f"Error during ECDSA verification: {e}")
         return False
 
-def generate_qr_code_from_signature_text(b64_signature_text):
-    """Membuat QR code dari signature (Base64 text). Mengembalikan image base64."""
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=6, # Ukuran lebih kecil untuk detail
-        border=4,
-    )
-    qr.add_data(b64_signature_text)
-    qr.make(fit=True)
+# --- Wrapper Functions ---
 
-    img = qr.make_image(fill_color="black", back_color="white")
+def sign_data(data_to_sign, private_key_obj):
+    """Wrapper untuk hashing dan penandatanganan data."""
+    if not data_to_sign or not isinstance(data_to_sign, str):
+        raise ValueError("Data untuk ditandatangani harus berupa string yang tidak kosong.")
     
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-    return img_str
+    data_hash = hash_data(data_to_sign)
+    signature_bytes = sign_data_ecdsa(data_hash, private_key_obj)
+    
+    return base64.b64encode(signature_bytes).decode('utf-8')
 
-def _verify(data_string, signature_b64, public_key_obj):
-    """
-    Memverifikasi tanda tangan terhadap string data menggunakan kunci publik.
-    
-    :param data_string: String data asli yang ditandatangani.
-    :param signature_b64: Tanda tangan dalam format base64.
-    :param public_key_obj: Objek kunci publik yang sudah dimuat.
-    :return: True jika verifikasi berhasil, False jika gagal.
-    """
+def verify_data(data_string, signature_b64, public_key_obj):
+    """Wrapper untuk verifikasi signature."""
+    if not data_string or not signature_b64:
+        raise ValueError("Data dan signature tidak boleh kosong.")
+
     try:
-        # 1. Decode tanda tangan dari base64 dengan validasi ketat
-        signature_bytes = base64.b64decode(signature_b64, validate=True)
-        
-        # 2. Hash string data menggunakan algoritma yang sama (SHA3-256)
-        data_hash = hashlib.sha3_256(data_string.encode('utf-8')).digest()
-        
-        # 3. Verifikasi tanda tangan terhadap hash yang sudah dihitung
-        public_key_obj.verify(
-            signature_bytes,
-            data_hash,
-            ec.ECDSA(hashes.SHA256()) # Algoritma internal untuk skema ECDSA
+        signature_bytes = base64.b64decode(signature_b64)
+    except (TypeError, ValueError):
+        raise ValueError("Format signature Base64 tidak valid.")
+
+    data_hash = hash_data(data_string)
+    return verify_signature_ecdsa(data_hash, signature_bytes, public_key_obj)
+
+
+# --- QR Code ---
+
+def generate_qr_code_from_signature_text(b64_signature_text):
+    """Membuat QR code dari signature (Base64 text). Mengembalikan bytes gambar PNG."""
+    if not b64_signature_text:
+        return None
+    try:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=4,
+            border=4,
         )
-        return True
-    except (InvalidSignature, TypeError, ValueError):
-        # Menangkap error jika signature tidak valid, base64 salah, dll.
-        return False
+        qr.add_data(b64_signature_text)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        return buf.getvalue()
+    except Exception as e:
+        print(f"Error generating QR code: {e}")
+        return None

@@ -12,34 +12,23 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Ambil nilai spesialis
-        spesialis_value = form.spesialis.data
-        if spesialis_value == 'ISI_SENDIRI':
-            spesialis_value = form.spesialis_custom.data or None
-        elif not spesialis_value:
-            spesialis_value = None
-
-        # Ambil nilai level
-        level_value = form.level.data
-        if level_value == 'ISI_SENDIRI':
-            level_value = form.level_custom.data or None
-        elif not level_value:
-            level_value = None
-
         user = User(
             username=form.username.data,
             email=form.email.data,
             nama_lengkap=form.nama_lengkap.data,
             role='pelajar',
-            password=form.password.data,
-            spesialis=spesialis_value, # <-- Gunakan nama baru
-            spesialis_level=level_value
+            spesialis=form.spesialis.data or None,
+            spesialis_level=form.level_spesialis.data or None
         )
+        # --- PERBAIKAN: Hash password sebelum disimpan ---
+        user.set_password(form.password.data)
+        # ---------------------------------------------
         db.session.add(user)
         db.session.commit()
-        flash('Selamat! Anda berhasil terdaftar. Silakan login.', 'success')
+        flash('Akun Anda telah berhasil dibuat! Silakan login.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title='Registrasi Pelajar', form=form)
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,8 +37,9 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        # Ubah pengecekan password
-        if user and user.password == form.password.data:
+        # --- PERBAIKAN: Gunakan metode check_password untuk verifikasi ---
+        if user and user.check_password(form.password.data):
+        # -------------------------------------------------------------
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             flash(f'Login berhasil. Selamat datang, {user.nama_lengkap}!', 'success')

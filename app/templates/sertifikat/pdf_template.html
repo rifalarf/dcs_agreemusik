@@ -119,12 +119,14 @@
       <div class="field-value">{{ sertifikat.pemilik.nama_lengkap }}</div>
 
       <div class="field-label">Atas kelulusan pada kursus:</div>
+      <!-- PERBAIKAN: Tampilkan spesialis DAN levelnya -->
       <div class="field-value">{{ sertifikat.spesialis }}</div>
 
       <div class="field-label">Diterbitkan pada tanggal:</div>
-      <div class="field-value" style="font-size:24px; font-weight:normal;">{{ sertifikat.tanggal_terbit_id }}</div>
+      <!-- PERBAIKAN: Gunakan atribut yang benar dan format tanggalnya -->
+      <div class="field-value" style="font-size:24px; font-weight:normal;">{{ sertifikat.tanggal_terbit.strftime('%d %B %Y') }}</div>
 
-      <div class="field-label">Nomor ID:</div>
+      <div class="field-label">ID Sertifikat:</div>
       <div class="field-value" style="font-size:24px; font-weight:normal;">{{ sertifikat.id_sertifikat }}</div>
     </div>
     <div class="cert-footer">
