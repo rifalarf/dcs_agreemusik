@@ -28,11 +28,11 @@ def detail_sertifikat_pelajar(sertifikat_id):
     """Menampilkan detail sebuah sertifikat untuk pelajar."""
     sertifikat = Sertifikat.query.filter_by(id=sertifikat_id, user_id=current_user.id).first_or_404()
     
-    # Logika untuk membuat QR code (sama seperti di admin)
+    # PERBAIKAN: Encode gambar QR dari database (binary) ke base64 untuk ditampilkan di HTML
     qr_code_img_b64 = None
-    if sertifikat.signature_hash:
-        from .utils_crypto import generate_qr_code_from_signature_text
-        qr_code_img_b64 = generate_qr_code_from_signature_text(sertifikat.signature_hash)
+    if sertifikat.qr_code_img:
+        import base64
+        qr_code_img_b64 = base64.b64encode(sertifikat.qr_code_img).decode('utf-8')
 
     return render_template('pelajar/detail_sertifikat_pelajar.html', title='Detail Sertifikat', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
 

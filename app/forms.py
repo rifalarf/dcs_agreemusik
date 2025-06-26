@@ -30,8 +30,6 @@ class RegistrationForm(FlaskForm):
     nama_lengkap = StringField('Nama Lengkap', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Konfirmasi Password', validators=[DataRequired(), EqualTo('password')])
-
-    # --- PERBAIKAN: Hapus field _custom yang membingungkan ---
     spesialis = SelectField('Spesialis', choices=SPESIALIS_CHOICES, validators=[Optional()])
     submit = SubmitField('Daftar')
 
