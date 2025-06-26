@@ -13,6 +13,9 @@
             <p><strong>Username:</strong> {{ current_user.username }}</p>
             <p><strong>Email:</strong> {{ current_user.email }}</p>
             <p><strong>Nama Lengkap:</strong> {{ current_user.nama_lengkap }}</p>
+            <div class="mt-4">
+                <a href="{{ url_for('pelajar.edit_profile') }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm transition duration-150">Edit Profil</a>
+            </div>
         </div>
 
         <a href="{{ url_for('pelajar.list_sertifikat_pelajar') }}" class="block p-6 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">

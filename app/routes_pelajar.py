@@ -1,6 +1,8 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, send_file, current_app
+from flask import Blueprint, render_template, flash, redirect, url_for, send_file, current_app, request
 from flask_login import login_required, current_user
-from .models import Sertifikat
+from .models import Sertifikat, User
+from .forms import ProfileForm
+from . import db
 import os
 
 pelajar_bp = Blueprint('pelajar', __name__, url_prefix='/pelajar')
@@ -64,3 +66,25 @@ def cetak_sertifikat_pelajar(sertifikat_id):
     else:
         flash('File PDF untuk sertifikat ini tidak ditemukan. Silakan hubungi admin.', 'warning')
         return redirect(url_for('pelajar.dashboard'))
+
+@pelajar_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """Menampilkan form dan memproses pembaruan profil pelajar."""
+    form = ProfileForm(original_username=current_user.username, original_email=current_user.email)
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.nama_lengkap = form.nama_lengkap.data
+        current_user.spesialis = form.spesialis.data
+        if form.password.data:
+            current_user.set_password(form.password.data)
+        db.session.commit()
+        flash('Profil Anda telah berhasil diperbarui.', 'success')
+        return redirect(url_for('pelajar.dashboard'))
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.nama_lengkap.data = current_user.nama_lengkap
+        form.spesialis.data = current_user.spesialis
+    return render_template('pelajar/edit_profile.html', title='Edit Profil', form=form)

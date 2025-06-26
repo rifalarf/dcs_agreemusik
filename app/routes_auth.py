@@ -17,8 +17,7 @@ def register():
             email=form.email.data,
             nama_lengkap=form.nama_lengkap.data,
             role='pelajar',
-            spesialis=form.spesialis.data or None,
-            spesialis_level=form.level_spesialis.data or None
+            spesialis=form.spesialis.data or None
         )
         # --- PERBAIKAN: Hash password sebelum disimpan ---
         user.set_password(form.password.data)
