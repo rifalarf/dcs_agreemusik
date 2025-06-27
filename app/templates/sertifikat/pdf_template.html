@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sertifikat</title>
   <style>
-    
     @page { size: A4 landscape; margin: 0; }
     body {
       margin: 0;
@@ -14,10 +13,8 @@
       height: 21cm;
       font-family: '', serif;
     }
-    
     .certificate-container {
       box-sizing: border-box;
-      /* PERBAIKAN: Gunakan URI file absolut yang di-pass dari backend */
       background: url("{{ background_image_uri }}") center/cover no-repeat;
       width: 27.7cm;
       height: 19cm;
@@ -56,12 +53,26 @@
       font-size: 18px;
       color: #ddd;
       margin-bottom: 4px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      text-align: left;
+      /* shadow agar makin kontras */
+      text-shadow: 1px 1px 4px #44444490;
     }
     .cert-body .field-value {
       font-size: 34px;
-      color: #eee;
+      color: #fff;
       margin-bottom: 18px;
       font-weight: bold;
+      font-family: Arial, Helvetica, sans-serif;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 5px #44444470;
+      background: rgba(0,0,0,0.09);
+      border-radius: 7px;
+      display: inline-block;
+      padding: 2px 16px;
+      text-align: left;
     }
     .cert-footer {
       width: 100%;
@@ -95,6 +106,9 @@
       margin-bottom: 6px;
       font-size: 18px;
       color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      text-shadow: 1px 1px 4px #44444490;
     }
     .footer-right .sign-box {
       border-top: 2px solid #fff;
@@ -105,6 +119,7 @@
     .position-ag{
       color: #fff;
       font-size: 12px;
+      font-family: Arial, Helvetica, sans-serif;
     }
   </style>
 </head>
@@ -115,15 +130,13 @@
       <h2>KELULUSAN</h2>
     </div>
     <div class="cert-body">
-      <div class="field-label">Dengan bangga diberikan kepada:</div>
+      <div class="field-label">Nama:</div>
       <div class="field-value">{{ sertifikat.pemilik.nama_lengkap }}</div>
 
-      <div class="field-label">Atas kelulusan pada kursus:</div>
-      <!-- PERBAIKAN: Tampilkan spesialis DAN levelnya -->
+      <div class="field-label">Spesialis:</div>
       <div class="field-value">{{ sertifikat.spesialis }}</div>
 
-      <div class="field-label">Diterbitkan pada tanggal:</div>
-      <!-- PERBAIKAN: Gunakan atribut yang benar dan format tanggalnya -->
+      <div class="field-label">Tanggal Terbit:</div>
       <div class="field-value" style="font-size:24px; font-weight:normal;">{{ sertifikat.tanggal_terbit.strftime('%d %B %Y') }}</div>
 
       <div class="field-label">ID Sertifikat:</div>
@@ -135,9 +148,8 @@
         <div class="qr-label">s.id/agreemusik</div>
       </div>
       <div class="footer-right">
-        <!-- PERBAIKAN: Gunakan URI file absolut yang di-pass dari backend -->
         <img src="{{ signature_image_uri }}" alt="TTD" class="sign-image">
-          <div class="sign-box"></div>
+        <div class="sign-box"></div>
         <div class="sign-name">{{ sertifikat.penandatangan }}</div>
         <div class="position-ag">DIREKTUR AGREE MUSIK</div>
       </div>
