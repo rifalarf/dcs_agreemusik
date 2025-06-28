@@ -21,6 +21,9 @@ class Config:
     CERTIFICATE_TEMPLATE_PATH = os.path.join(basedir, "app", "static", "images", "template.png")
     FONT_BASE_PATH = os.path.join(basedir, "app", "static", "fonts")
 
+    # OCR Space API key
+    OCR_SPACE_API_KEY = os.environ.get('OCR_SPACE_API_KEY')
+
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'

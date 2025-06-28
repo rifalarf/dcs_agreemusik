@@ -1,30 +1,21 @@
 import fitz  # PyMuPDF
-import io
 from PIL import Image
-from pyzbar.pyzbar import decode as qr_decode
+import io
 
-def extract_data_from_pdf(pdf_bytes):
+def extract_images_from_pdf(pdf_bytes, dpi=200):
     """
-    Mengekstrak HANYA konten dari QR code dalam file PDF.
-    Mengabaikan semua data teks lain untuk keamanan dan kecepatan.
+    Render seluruh halaman pertama PDF menjadi gambar (PIL.Image).
+    Return: list of PIL.Image (biasanya hanya satu, halaman pertama).
     """
-    try:
-        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
-            for page_num in range(len(doc)):
-                page = doc.load_page(page_num)
-                for img in page.get_images(full=True):
-                    xref = img[0]
-                    base_image = doc.extract_image(xref)
-                    image_bytes = base_image["image"]
-                    try:
-                        pil_img = Image.open(io.BytesIO(image_bytes))
-                        decoded_qr = qr_decode(pil_img)
-                        if decoded_qr:
-                            # Kembalikan konten dari QR code pertama yang ditemukan
-                            return decoded_qr[0].data.decode('utf-8')
-                    except Exception:
-                        continue # Abaikan gambar yang tidak bisa diproses
-    except Exception as e:
-        print(f"ERROR: Terjadi kesalahan saat memproses PDF untuk QR code: {e}")
-    
-    return None # Kembalikan None jika tidak ada QR code yang ditemukan
+    images = []
+    pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
+    if pdf.page_count == 0:
+        return images
+    page = pdf[0]
+    # Render halaman ke pixmap (gambar)
+    zoom = dpi / 72  # 72 dpi adalah default PDF
+    mat = fitz.Matrix(zoom, zoom)
+    pix = page.get_pixmap(matrix=mat, alpha=False)
+    img_pil = Image.open(io.BytesIO(pix.tobytes("png")))
+    images.append(img_pil)
+    return images

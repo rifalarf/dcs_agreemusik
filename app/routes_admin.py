@@ -6,6 +6,7 @@ import hashlib
 from flask import (Blueprint, flash, redirect, render_template, request,
                    url_for, current_app, send_file, jsonify)
 from flask_login import login_required
+from datetime import datetime
 
 from . import db
 from .decorators import admin_required
@@ -51,7 +52,7 @@ def process_and_generate_pdf(sertifikat, private_key_obj):
     sertifikat.qr_code_img = qr_image_bytes
     
     # Langkah 4: Catat waktu penandatanganan.
-    sertifikat.tanggal_sign = datetime.datetime.utcnow()
+    sertifikat.tanggal_sign = datetime.utcnow()
 
     # Langkah 5: Buat file PDF menggunakan WeasyPrint.
     qr_b64 = base64.b64encode(sertifikat.qr_code_img).decode('utf-8')
@@ -301,3 +302,37 @@ def get_pelajar_spesialis(user_id):
         return jsonify({'spesialis': user.spesialis or ''})
     else:
         return jsonify({'error': 'User not found'}), 404
+
+@admin_bp.route('/sertifikat/ocr', methods=['POST'])
+@login_required
+@admin_required
+def ocr_sertifikat():
+    """
+    Mengolah hasil OCR untuk sertifikat dan memperbarui data sertifikat.
+    """
+    data = request.get_json()
+    if not data or 'ocr_result' not in data:
+        return jsonify({'error': 'Data OCR tidak ditemukan.'}), 400
+
+    ocr_result = data['ocr_result']
+    # Simulasi: Buat objek sertifikat baru dari hasil OCR
+    mock_sertifikat_obj = Sertifikat()
+
+    # Normalisasi tanggal terbit hasil OCR ke YYYY-MM-DD
+    tgl_ocr = ocr_result.get('tanggal_terbit')
+    if tgl_ocr:
+        try:
+            # Coba parsing dari format "28 June 2025" ke "2025-06-28"
+            tgl_obj = datetime.strptime(tgl_ocr.strip(), '%d %B %Y')
+            mock_sertifikat_obj.tanggal_terbit = tgl_obj.strftime('%Y-%m-%d')
+        except Exception:
+            # Jika gagal, gunakan apa adanya
+            mock_sertifikat_obj.tanggal_terbit = tgl_ocr
+    else:
+        mock_sertifikat_obj.tanggal_terbit = tgl_ocr
+
+    # Untuk keperluan debug, simpan hasil OCR dan objek sertifikat sementara
+    current_app.logger.debug(f"Hasil OCR: {ocr_result}")
+    current_app.logger.debug(f"Objek Sertifikat (sementara): {mock_sertifikat_obj.to_dict()}")
+
+    return jsonify({'message': 'Data sertifikat berhasil diproses.', 'sertifikat': mock_sertifikat_obj.to_dict()}), 200
