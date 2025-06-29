@@ -7,8 +7,9 @@
 <div class="bg-white p-6 md:p-8 rounded-lg shadow-xl">
     <div class="flex justify-between items-center mb-6 border-b pb-4">
         <h1 class="text-3xl font-bold text-indigo-700">{{ title }}</h1>
-        <a href="{{ url_for('admin.tambah_sertifikat') }}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-150">
-            <i class="fas fa-plus mr-2"></i>Buat Sertifikat
+        <a href="{{ url_for('admin.tambah_sertifikat') }}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-150 flex items-center justify-center">
+            <i class="fas fa-plus"></i>
+            <span class="hidden sm:inline ml-2">Buat Sertifikat</span>
         </a>
     </div>
 

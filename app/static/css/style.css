@@ -1,18 +1,25 @@
 /* style.css */
 
-/* Custom scrollbar */
+/* Custom scrollbar: putih & biru */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #2d3748;
+  background: #fff;
 }
 ::-webkit-scrollbar-thumb {
-  background: #f7da92;
+  background: #2563eb; /* biru Tailwind: blue-600 */
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #e6c67e;
+  background: #1d4ed8; /* biru lebih gelap */
+}
+
+/* Scrollbar Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2563eb #fff;
 }
 
 /* Base & Hero */
@@ -809,4 +816,20 @@ body {
 footer {
     border-top: #718096 1px solid;
 
+}
+
+/* Responsive table: mobile */
+@media (max-width: 640px) {
+  .responsive-table-wrapper {
+    margin: 0 -1rem;
+    padding: 0 0.5rem;
+  }
+  table {
+    font-size: 0.85rem;
+  }
+  th, td {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    white-space: nowrap;
+  }
 }

@@ -30,7 +30,7 @@
         </div>
     </div>
     <!-- Mobile Menu -->
-    <div id="mobile-menu" class="md:hidden hidden bg-indigo-700">
+    <div id="mobile-menu" class="md:hidden overflow-hidden max-h-0 opacity-0 transition-all duration-300 bg-indigo-700">
         <a href="{{ url_for('main.index') }}" class="block px-4 py-2 text-sm hover:bg-indigo-800">Home</a>
         <a href="{{ url_for('public.verify_certificate') }}" class="block px-4 py-2 text-sm hover:bg-indigo-800">Verifikasi Sertifikat</a>
         {% if current_user.is_authenticated %}

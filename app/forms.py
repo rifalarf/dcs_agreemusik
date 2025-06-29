@@ -78,14 +78,13 @@ class SertifikatForm(FlaskForm):
     tanggal_terbit = DateField('Tanggal Terbit', format='%Y-%m-%d', validators=[DataRequired()])
     penandatangan = StringField('Penandatangan', validators=[DataRequired()])
     id_sertifikat = StringField('ID Sertifikat', render_kw={'readonly': True})
-    
-    # --- PERBAIKAN: Jadikan Nomor Sertifikat opsional di form ---
-    # Nomor ini akan digenerate otomatis oleh sistem saat membuat sertifikat baru.
     submit = SubmitField('Simpan Sertifikat')
 
     def __init__(self, original_sertifikat=None, *args, **kwargs):
         super(SertifikatForm, self).__init__(*args, **kwargs)
         self.original_sertifikat = original_sertifikat
+        if not original_sertifikat and not self.penandatangan.data:
+            self.penandatangan.data = "Shofia Fauziah"
 
     def validate_id_sertifikat(self, id_sertifikat):
         sertifikat = Sertifikat.query.filter_by(id_sertifikat=id_sertifikat.data).first()
@@ -98,9 +97,9 @@ class SertifikatForm(FlaskForm):
 
 
 class VerifyCertificateForm(FlaskForm):
-    pdf_file_upload = FileField('Unggah PDF Sertifikat', validators=[
+    pdf_file_upload = FileField('Unggah File Sertifikat', validators=[
         Optional(),
-        FileAllowed(['pdf'], 'Hanya file PDF yang diizinkan!')
+        FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'Hanya file PDF, JPG, JPEG, atau PNG yang diizinkan!')
     ])
     id_sertifikat = StringField('ID Sertifikat', validators=[Optional()])
     nama_penerima = StringField('Nama Penerima', validators=[Optional()])

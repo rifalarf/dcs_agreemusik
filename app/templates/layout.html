@@ -27,4 +27,22 @@
 {# --- PERBAIKAN: Tambahkan blok kode ini di bawah komentar --- #}
 {% block scripts %}
     {{ super() }}
+    <script>
+        // Toggle menu untuk hamburger dengan transisi halus
+        document.addEventListener('DOMContentLoaded', function() {
+            var menuBtn = document.getElementById('mobile-menu-button');
+            var navMenu = document.getElementById('mobile-menu');
+            if (menuBtn && navMenu) {
+                menuBtn.addEventListener('click', function() {
+                    if (navMenu.classList.contains('max-h-0')) {
+                        navMenu.classList.remove('max-h-0', 'opacity-0');
+                        navMenu.classList.add('max-h-96', 'opacity-100');
+                    } else {
+                        navMenu.classList.add('max-h-0', 'opacity-0');
+                        navMenu.classList.remove('max-h-96', 'opacity-100');
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock %}

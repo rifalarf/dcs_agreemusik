@@ -102,11 +102,22 @@ def verify_certificate():
         # --- WORKFLOW OCR/QR ---
         if form.pdf_file_upload.data:
             try:
-                pdf_bytes = request.files[form.pdf_file_upload.name].read()
-                images = extract_images_from_pdf(pdf_bytes)
-                if not images:
-                    raise ValueError("Gagal mengekstrak gambar dari PDF.")
-                pil_img = images[0]
+                file_storage = request.files[form.pdf_file_upload.name]
+                filename = file_storage.filename.lower()
+                file_bytes = file_storage.read()
+
+                if filename.endswith('.pdf'):
+                    images = extract_images_from_pdf(file_bytes)
+                    if not images:
+                        raise ValueError("Gagal mengekstrak gambar dari PDF.")
+                    pil_img = images[0]
+                elif filename.endswith(('.jpg', '.jpeg', '.png')):
+                    from PIL import Image
+                    import io
+                    pil_img = Image.open(io.BytesIO(file_bytes))
+                else:
+                    raise ValueError("Format file tidak didukung.")
+
                 with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_img:
                     compress_image_pil(pil_img, tmp_img.name)
                     compressed_path = tmp_img.name
