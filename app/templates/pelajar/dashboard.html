@@ -8,21 +8,26 @@
     <p class="text-lg text-gray-700 mb-8">Selamat datang, {{ current_user.nama_lengkap }}!</p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-blue-100 p-6 rounded-lg shadow">
+        <div class="bg-blue-100 p-6 rounded-lg shadow relative">
             <h2 class="text-xl font-semibold text-blue-800 mb-2">Informasi Akun</h2>
+            <!-- Tombol edit profil dengan ikon outline abu-abu tanpa lingkaran -->
+            <a href="{{ url_for('pelajar.edit_profile') }}"
+               class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition group"
+               title="Klik untuk mengedit profil Anda"
+               aria-label="Edit Profil">
+                <i class="fas fa-pen-to-square fa-lg group-hover:scale-110 transition-transform duration-150"></i>
+                <span class="sr-only">Edit Profil</span>
+            </a>
             <p><strong>Username:</strong> {{ current_user.username }}</p>
             <p><strong>Email:</strong> {{ current_user.email }}</p>
             <p><strong>Nama Lengkap:</strong> {{ current_user.nama_lengkap }}</p>
-            <div class="mt-4">
-                <a href="{{ url_for('pelajar.edit_profile') }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm transition duration-150">Edit Profil</a>
-            </div>
         </div>
 
         <a href="{{ url_for('pelajar.list_sertifikat_pelajar') }}" class="block p-6 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105">
             <div class="flex items-center">
                 <i class="fas fa-award fa-3x mr-4"></i>
                 <div>
-                    <h2 class="text-2xl font-semibold">Sertifikat Saya</h2>
+                    <h2 class="text-2xl font-semibold ">Sertifikat Saya</h2>
                     <p class="text-sm">Lihat semua sertifikat kompetensi yang Anda miliki ({{ jumlah_sertifikat }} sertifikat).</p>
                 </div>
             </div>

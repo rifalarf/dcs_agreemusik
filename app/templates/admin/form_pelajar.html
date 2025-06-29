@@ -15,7 +15,12 @@
         {{ render_field(form.spesialis) }}
         
         <div class="mt-4 border-t pt-4">
-            {{ render_field(form.password, type="password", placeholder="Kosongkan jika tidak ingin mengubah") }}
+            <div class="relative">
+                {{ form.password(type="password", placeholder="Kosongkan jika tidak ingin mengubah", id="edit-pelajar-password", class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500") }}
+                <button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500" onclick="togglePassword('edit-pelajar-password', this)">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
             {{ render_field(form.role) }}
         </div>
 
@@ -29,6 +34,20 @@
 </div>
 {% endblock %}
 
-{# --- PERBAIKAN: Hapus blok skrip yang sudah tidak relevan --- #}
-{% block scripts_extra %}
+{% block scripts %}
+{{ super() }}
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === "password") {
+        input.type = "text";
+        btn.querySelector('i').classList.remove('fa-eye');
+        btn.querySelector('i').classList.add('fa-eye-slash');
+    } else {
+        input.type = "password";
+        btn.querySelector('i').classList.remove('fa-eye-slash');
+        btn.querySelector('i').classList.add('fa-eye');
+    }
+}
+</script>
 {% endblock %}
