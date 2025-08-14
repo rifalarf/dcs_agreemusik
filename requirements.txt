@@ -37,3 +37,4 @@ PyMuPDF
 pdfplumber
 gevent
 WTForms-SQLAlchemy
+openpyxl

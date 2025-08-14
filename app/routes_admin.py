@@ -15,6 +15,9 @@ from .models import Sertifikat, User
 from .utils_crypto import create_data_string, sign_data, generate_qr_code_from_signature_text, load_private_key
 from .utils_certificate import generate_certificate_pdf
 from cryptography.hazmat.primitives import serialization
+import io
+from openpyxl import Workbook
+from sqlalchemy.orm import joinedload
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -82,8 +85,12 @@ def dashboard():
 @admin_required
 def manage_pelajar():
     page = request.args.get('page', 1, type=int)
-    pelajars = User.query.order_by(User.nama_lengkap).paginate(page=page, per_page=10)
-    return render_template('admin/manage_pelajar.html', title='Manajemen Pelajar', pelajars=pelajars)
+    per_page = request.args.get('per_page', 10, type=int)
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    pelajars = User.query.filter(User.role == 'pelajar').order_by(User.id.desc()).paginate(page=page, per_page=per_page)
+    return render_template('admin/manage_pelajar.html', title='Manajemen Pelajar', pelajars=pelajars, per_page=per_page)
+
 
 @admin_bp.route('/pelajar/tambah', methods=['GET', 'POST'])
 @login_required
@@ -95,7 +102,6 @@ def tambah_pelajar():
             username=form.username.data,
             email=form.email.data,
             nama_lengkap=form.nama_lengkap.data,
-            role=form.role.data,
             spesialis=form.spesialis.data or None
         )
         if form.password.data:
@@ -117,7 +123,6 @@ def edit_pelajar(user_id):
         user.username = form.username.data
         user.email = form.email.data
         user.nama_lengkap = form.nama_lengkap.data
-        user.role = form.role.data
         user.spesialis = form.spesialis.data or None
         if form.password.data:
             user.set_password(form.password.data)
@@ -128,9 +133,9 @@ def edit_pelajar(user_id):
         form.username.data = user.username
         form.email.data = user.email
         form.nama_lengkap.data = user.nama_lengkap
-        form.role.data = user.role
         form.spesialis.data = user.spesialis
     return render_template('admin/form_pelajar.html', title='Edit Pelajar', form=form, legend=f'Edit Pelajar: {user.nama_lengkap}')
+
 
 @admin_bp.route('/pelajar/hapus/<int:user_id>', methods=['POST'])
 @login_required
@@ -153,8 +158,26 @@ def hapus_pelajar(user_id):
 @admin_required
 def manage_sertifikat():
     page = request.args.get('page', 1, type=int)
-    sertifikats = Sertifikat.query.order_by(Sertifikat.id.desc()).paginate(page=page, per_page=10)
-    return render_template('admin/manage_sertifikat.html', title='Manajemen Sertifikat', sertifikats=sertifikats)
+    per_page = request.args.get('per_page', 10, type=int)
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    sertifikats = Sertifikat.query.order_by(Sertifikat.id.desc()).paginate(page=page, per_page=per_page)
+    return render_template('admin/manage_sertifikat.html', title='Manajemen Sertifikat', sertifikats=sertifikats, per_page=per_page)
+
+
+@admin_bp.route('/sertifikat/detail/<int:sertifikat_id>')
+@login_required
+@admin_required
+def detail_sertifikat(sertifikat_id):
+    """Menampilkan detail sebuah sertifikat dari sisi admin."""
+    sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
+    
+    qr_code_img_b64 = None
+    if sertifikat.qr_code_img:
+        qr_code_img_b64 = base64.b64encode(sertifikat.qr_code_img).decode('utf-8')
+
+    return render_template('admin/detail_sertifikat.html', title='Detail Sertifikat', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
+
 
 @admin_bp.route('/sertifikat/tambah', methods=['GET', 'POST'])
 @login_required
@@ -237,21 +260,6 @@ def edit_sertifikat(sertifikat_id):
     pelajar_data_json = json.dumps(pelajar_data)
     return render_template('admin/form_sertifikat.html', title='Edit Sertifikat', form=form, pelajar_data_json=pelajar_data_json)
 
-@admin_bp.route('/sertifikat/detail/<int:sertifikat_id>')
-@login_required
-@admin_required
-def detail_sertifikat_admin(sertifikat_id):
-    """Menampilkan detail sebuah sertifikat, termasuk QR code-nya."""
-    sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
-    qr_code_img_b64 = None
-    if sertifikat.signature_hash:
-        # PERBAIKAN: Generate bytes dan encode ke base64 untuk ditampilkan di HTML
-        qr_bytes = generate_qr_code_from_signature_text(sertifikat.signature_hash)
-        if qr_bytes:
-            qr_code_img_b64 = base64.b64encode(qr_bytes).decode('utf-8')
-    
-    return render_template('admin/detail_sertifikat.html', title='Detail Sertifikat', sertifikat=sertifikat, qr_code_img_b64=qr_code_img_b64)
-
 
 @admin_bp.route('/sertifikat/cetak/<int:sertifikat_id>')
 @login_required
@@ -291,6 +299,95 @@ def hapus_sertifikat(sertifikat_id):
     db.session.commit()
     flash(f'Sertifikat {sertifikat.id_sertifikat} berhasil dihapus.', 'success')
     return redirect(url_for('admin.manage_sertifikat'))
+
+# --- Rute Ekspor ---
+
+@admin_bp.route('/pelajar/export')
+@login_required
+@admin_required
+def export_pelajar():
+    """Mengekspor data pelajar ke file Excel."""
+    try:
+        pelajars = User.query.filter_by(role='pelajar').order_by(User.nama_lengkap).all()
+        
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Data Pelajar"
+
+        # Header
+        headers = ['ID', 'Username', 'Nama Lengkap', 'Email', 'Spesialis']
+        sheet.append(headers)
+
+        # Data
+        for pelajar in pelajars:
+            sheet.append([
+                pelajar.id,
+                pelajar.username,
+                pelajar.nama_lengkap,
+                pelajar.email,
+                pelajar.spesialis or '-'
+            ])
+
+        # Simpan ke memory
+        output = io.BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name='data_pelajar.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
+        current_app.logger.error(f"Gagal mengekspor data pelajar: {e}")
+        flash("Terjadi kesalahan saat mengekspor data pelajar.", "danger")
+        return redirect(url_for('admin.manage_pelajar'))
+
+@admin_bp.route('/sertifikat/export')
+@login_required
+@admin_required
+def export_sertifikat():
+    """Mengekspor data sertifikat ke file Excel."""
+    try:
+        sertifikats = Sertifikat.query.options(joinedload(Sertifikat.pemilik)).order_by(Sertifikat.id.desc()).all()
+        
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Data Sertifikat"
+
+        # Header
+        headers = ['ID Sertifikat', 'Nama Penerima', 'Spesialis', 'Tanggal Terbit', 'Penandatangan', 'Tanggal Ditandatangani', 'Signature Hash']
+        sheet.append(headers)
+
+        # Data
+        for sertifikat in sertifikats:
+            sheet.append([
+                sertifikat.id_sertifikat,
+                sertifikat.pemilik.nama_lengkap if sertifikat.pemilik else 'N/A',
+                sertifikat.spesialis,
+                sertifikat.tanggal_terbit.strftime('%Y-%m-%d') if sertifikat.tanggal_terbit else '',
+                sertifikat.penandatangan,
+                sertifikat.tanggal_sign.strftime('%Y-%m-%d %H:%M:%S') if sertifikat.tanggal_sign else 'Belum ditandatangani',
+                sertifikat.signature_hash or ''
+            ])
+
+        # Simpan ke memory
+        output = io.BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name='data_sertifikat.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
+        current_app.logger.error(f"Gagal mengekspor data sertifikat: {e}")
+        flash("Terjadi kesalahan saat mengekspor data sertifikat.", "danger")
+        return redirect(url_for('admin.manage_sertifikat'))
+
 
 @admin_bp.route('/pelajar/<int:user_id>/get_spesialis', methods=['GET'])
 @login_required

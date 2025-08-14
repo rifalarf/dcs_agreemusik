@@ -49,7 +49,6 @@ class PelajarForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     nama_lengkap = StringField('Nama Lengkap', validators=[DataRequired()])
     password = PasswordField('Password Baru (opsional)')
-    role = SelectField('Role', choices=[('pelajar', 'Pelajar'), ('admin', 'Admin')], validators=[DataRequired()])
     spesialis = SelectField('Spesialis', choices=SPESIALIS_CHOICES, validators=[Optional()])
     submit = SubmitField('Simpan')
 
