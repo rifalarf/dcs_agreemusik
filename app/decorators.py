@@ -19,3 +19,14 @@ def pelajar_required(f):
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
+
+def redirect_if_authenticated(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.is_authenticated:
+            if current_user.is_admin:
+                return redirect(url_for('admin.dashboard'))
+            elif current_user.role == 'pelajar':
+                return redirect(url_for('pelajar.dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function

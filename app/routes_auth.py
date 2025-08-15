@@ -3,13 +3,13 @@ from flask_login import login_user, logout_user, current_user, login_required
 from .forms import LoginForm, RegistrationForm
 from .models import User
 from . import db
+from .decorators import redirect_if_authenticated
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@redirect_if_authenticated
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(
@@ -29,9 +29,8 @@ def register():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@redirect_if_authenticated
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index')) # Arahkan ke Home
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()

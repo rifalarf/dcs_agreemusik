@@ -10,10 +10,12 @@ from datetime import datetime
 
 from . import db
 from .decorators import admin_required
-from .forms import PelajarForm, SertifikatForm
+from .forms import UserForm, SertifikatForm
 from .models import Sertifikat, User
 from .utils_crypto import create_data_string, sign_data, generate_qr_code_from_signature_text, load_private_key
 from .utils_certificate import generate_certificate_pdf
+from .utils.views import serve_pdf
+from .utils.export import export_to_excel
 from cryptography.hazmat.primitives import serialization
 import io
 from openpyxl import Workbook
@@ -96,7 +98,7 @@ def manage_pelajar():
 @login_required
 @admin_required
 def tambah_pelajar():
-    form = PelajarForm()
+    form = UserForm(is_admin=True)
     if form.validate_on_submit():
         user = User(
             username=form.username.data,
@@ -118,7 +120,7 @@ def tambah_pelajar():
 @admin_required
 def edit_pelajar(user_id):
     user = User.query.get_or_404(user_id)
-    form = PelajarForm(original_username=user.username, original_email=user.email)
+    form = UserForm(original_username=user.username, original_email=user.email, is_admin=True)
     if form.validate_on_submit():
         user.username = form.username.data
         user.email = form.email.data
@@ -234,9 +236,12 @@ def edit_sertifikat(sertifikat_id):
         
         try:
             private_key_path = current_app.config.get('PRIVATE_KEY_PATH')
-            with open(private_key_path, "rb") as key_file:
-                private_key_obj = serialization.load_pem_private_key(key_file.read(), password=None)
-            
+            private_key_obj = load_private_key(private_key_path)
+
+            if not private_key_obj:
+                flash('Gagal memuat kunci privat. Operasi tidak dapat dilanjutkan.', 'danger')
+                return redirect(url_for('admin.edit_sertifikat', sertifikat_id=sertifikat_id))
+
             process_and_generate_pdf(sertifikat, private_key_obj)
             
             db.session.commit()
@@ -269,23 +274,7 @@ def cetak_sertifikat_admin(sertifikat_id):
     Menyajikan file PDF sertifikat yang sudah ada.
     """
     sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
-
-    # Periksa apakah path file PDF ada di database dan file-nya benar-benar ada di server
-    if sertifikat.pdf_file_path and os.path.exists(sertifikat.pdf_file_path):
-        try:
-            return send_file(
-                sertifikat.pdf_file_path,
-                as_attachment=False,  # Tampilkan di browser, jangan langsung download
-                download_name=f'Sertifikat_{sertifikat.id_sertifikat.replace("/", "_")}.pdf',
-                mimetype='application/pdf'
-            )
-        except Exception as e:
-            current_app.logger.error(f"Gagal mengirim file PDF: {e}")
-            flash('Terjadi kesalahan saat mencoba menampilkan PDF.', 'danger')
-            return redirect(url_for('admin.manage_sertifikat'))
-    else:
-        flash('File PDF untuk sertifikat ini tidak ditemukan. Silakan buat ulang sertifikat jika perlu.', 'warning')
-        return redirect(url_for('admin.manage_sertifikat'))
+    return serve_pdf(sertifikat, current_user, admin_view=True)
 
 
 @admin_bp.route('/sertifikat/hapus/<int:sertifikat_id>', methods=['POST'])
@@ -309,36 +298,18 @@ def export_pelajar():
     """Mengekspor data pelajar ke file Excel."""
     try:
         pelajars = User.query.filter_by(role='pelajar').order_by(User.nama_lengkap).all()
-        
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet.title = "Data Pelajar"
-
-        # Header
         headers = ['ID', 'Username', 'Nama Lengkap', 'Email', 'Spesialis']
-        sheet.append(headers)
 
-        # Data
-        for pelajar in pelajars:
-            sheet.append([
+        def data_mapper(pelajar):
+            return [
                 pelajar.id,
                 pelajar.username,
                 pelajar.nama_lengkap,
                 pelajar.email,
                 pelajar.spesialis or '-'
-            ])
+            ]
 
-        # Simpan ke memory
-        output = io.BytesIO()
-        workbook.save(output)
-        output.seek(0)
-
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name='data_pelajar.xlsx',
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        return export_to_excel(pelajars, headers, data_mapper, 'data_pelajar.xlsx')
     except Exception as e:
         current_app.logger.error(f"Gagal mengekspor data pelajar: {e}")
         flash("Terjadi kesalahan saat mengekspor data pelajar.", "danger")
@@ -351,18 +322,10 @@ def export_sertifikat():
     """Mengekspor data sertifikat ke file Excel."""
     try:
         sertifikats = Sertifikat.query.options(joinedload(Sertifikat.pemilik)).order_by(Sertifikat.id.desc()).all()
-        
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet.title = "Data Sertifikat"
-
-        # Header
         headers = ['ID Sertifikat', 'Nama Penerima', 'Spesialis', 'Tanggal Terbit', 'Penandatangan', 'Tanggal Ditandatangani', 'Signature Hash']
-        sheet.append(headers)
 
-        # Data
-        for sertifikat in sertifikats:
-            sheet.append([
+        def data_mapper(sertifikat):
+            return [
                 sertifikat.id_sertifikat,
                 sertifikat.pemilik.nama_lengkap if sertifikat.pemilik else 'N/A',
                 sertifikat.spesialis,
@@ -370,19 +333,9 @@ def export_sertifikat():
                 sertifikat.penandatangan,
                 sertifikat.tanggal_sign.strftime('%Y-%m-%d %H:%M:%S') if sertifikat.tanggal_sign else 'Belum ditandatangani',
                 sertifikat.signature_hash or ''
-            ])
+            ]
 
-        # Simpan ke memory
-        output = io.BytesIO()
-        workbook.save(output)
-        output.seek(0)
-
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name='data_sertifikat.xlsx',
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+        return export_to_excel(sertifikats, headers, data_mapper, 'data_sertifikat.xlsx')
     except Exception as e:
         current_app.logger.error(f"Gagal mengekspor data sertifikat: {e}")
         flash("Terjadi kesalahan saat mengekspor data sertifikat.", "danger")

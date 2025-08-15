@@ -44,7 +44,7 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Email tersebut sudah terdaftar. Silakan gunakan email lain.')
 
 
-class PelajarForm(FlaskForm):
+class UserForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     nama_lengkap = StringField('Nama Lengkap', validators=[DataRequired()])
@@ -52,11 +52,11 @@ class PelajarForm(FlaskForm):
     spesialis = SelectField('Spesialis', choices=SPESIALIS_CHOICES, validators=[Optional()])
     submit = SubmitField('Simpan')
 
-    # --- PERBAIKAN: Validasi unik yang lebih baik untuk edit ---
-    def __init__(self, original_username=None, original_email=None, *args, **kwargs):
-        super(PelajarForm, self).__init__(*args, **kwargs)
+    def __init__(self, original_username=None, original_email=None, is_admin=False, *args, **kwargs):
+        super(UserForm, self).__init__(*args, **kwargs)
         self.original_username = original_username
         self.original_email = original_email
+        self.is_admin = is_admin
 
     def validate_username(self, username):
         if username.data != self.original_username:
@@ -108,29 +108,3 @@ class VerifyCertificateForm(FlaskForm):
     qr_content = TextAreaField('Konten QR Code', validators=[Optional()])
     submit = SubmitField('Verifikasi Sertifikat')
 
-
-# --- Form untuk Pelajar Mengedit Profil Mereka Sendiri ---
-class ProfileForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    nama_lengkap = StringField('Nama Lengkap', validators=[DataRequired()])
-    password = PasswordField('Password Baru (opsional)')
-    spesialis = SelectField('Spesialis', choices=SPESIALIS_CHOICES, validators=[Optional()])
-    submit = SubmitField('Simpan Perubahan')
-
-    def __init__(self, original_username=None, original_email=None, *args, **kwargs):
-        super(ProfileForm, self).__init__(*args, **kwargs)
-        self.original_username = original_username
-        self.original_email = original_email
-
-    def validate_username(self, username):
-        if username.data != self.original_username:
-            user = User.query.filter_by(username=username.data).first()
-            if user:
-                raise ValidationError('Username sudah digunakan.')
-
-    def validate_email(self, email):
-        if email.data != self.original_email:
-            user = User.query.filter_by(email=email.data).first()
-            if user:
-                raise ValidationError('Email sudah digunakan.')

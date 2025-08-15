@@ -87,6 +87,105 @@ def normalize_id_sertifikat(id_sertifikat):
         return prefix + suffix
     return id_sertifikat
 
+def verify_with_ocr(file_storage, public_key_obj):
+    try:
+        filename = file_storage.filename.lower()
+        file_bytes = file_storage.read()
+
+        if filename.endswith('.pdf'):
+            images = extract_images_from_pdf(file_bytes)
+            if not images:
+                raise ValueError("Gagal mengekstrak gambar dari PDF.")
+            pil_img = images[0]
+        elif filename.endswith(('.jpg', '.jpeg', '.png')):
+            pil_img = Image.open(io.BytesIO(file_bytes))
+        else:
+            raise ValueError("Format file tidak didukung.")
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_img:
+            compress_image_pil(pil_img, tmp_img.name)
+            compressed_path = tmp_img.name
+
+        api_key = current_app.config.get('OCR_SPACE_API_KEY', None)
+        if not api_key:
+            raise ValueError("API key OCR belum diatur.")
+        ocr_fields = ocr_and_parse(compressed_path, api_key)
+        if not ocr_fields:
+            raise ValueError("Gagal membaca field sertifikat dari gambar (OCR).")
+
+        signature_from_qr = read_qr_signature(compressed_path)
+        if not signature_from_qr:
+            raise ValueError("QR Code tidak ditemukan pada gambar sertifikat.")
+
+        class MockSertifikat: pass
+        mock_sertifikat_obj = MockSertifikat()
+        mock_sertifikat_obj.id_sertifikat = normalize_id_sertifikat(ocr_fields.get('id_sertifikat'))
+        mock_sertifikat_obj.spesialis = ocr_fields.get('spesialis')
+
+        tgl_ocr = ocr_fields.get('tanggal_terbit')
+        if tgl_ocr:
+            try:
+                tgl_obj = datetime.strptime(tgl_ocr.strip(), '%d %B %Y')
+                mock_sertifikat_obj.tanggal_terbit = tgl_obj.strftime('%Y-%m-%d')
+            except Exception:
+                mock_sertifikat_obj.tanggal_terbit = tgl_ocr
+        else:
+            mock_sertifikat_obj.tanggal_terbit = tgl_ocr
+
+        mock_sertifikat_obj.penandatangan = ocr_fields.get('penandatangan')
+        mock_sertifikat_obj.pemilik = type('MockUser', (object,), {'nama_lengkap': ocr_fields.get('nama')})()
+
+        data_string = create_data_string(mock_sertifikat_obj)
+        is_valid = verify_data(data_string, signature_from_qr, public_key_obj)
+
+        verified_data = None
+        if is_valid:
+            flash('Verifikasi Berhasil: Data OCR dan tanda tangan digital VALID.', 'success')
+            real_sertifikat = Sertifikat.query.filter_by(signature_hash=signature_from_qr).first()
+            if real_sertifikat:
+                verified_data = real_sertifikat
+            else:
+                flash('PERINGATAN: Tanda tangan digital valid, tetapi tidak terdaftar di sistem kami.', 'warning')
+        else:
+            flash('Verifikasi Gagal: Data OCR dan signature tidak cocok.', 'danger')
+
+        return "VALID" if is_valid else "TIDAK VALID", verified_data
+
+    except Exception as e:
+        flash(f'Error saat memproses PDF/OCR: {e}', 'danger')
+        return "TIDAK VALID", None
+
+def verify_manually(form, public_key_obj):
+    try:
+        class MockSertifikat:
+            pass
+        mock_sertifikat_obj = MockSertifikat()
+        mock_sertifikat_obj.id_sertifikat = form.id_sertifikat.data
+        mock_sertifikat_obj.spesialis = form.spesialis.data
+        mock_sertifikat_obj.tanggal_terbit = form.tanggal_terbit.data
+        mock_sertifikat_obj.penandatangan = form.penandatangan.data
+        mock_sertifikat_obj.pemilik = type('MockUser', (object,), {'nama_lengkap': form.nama_penerima.data})()
+
+        data_string = create_data_string(mock_sertifikat_obj)
+        signature_from_form = form.qr_content.data
+        is_valid = verify_data(data_string, signature_from_form, public_key_obj)
+
+        verification_result = "VALID" if is_valid else "TIDAK VALID"
+        flash(f'Hasil verifikasi manual: Sertifikat {verification_result}.', 'success' if is_valid else 'danger')
+
+        verified_data = None
+        if is_valid:
+            real_sertifikat = Sertifikat.query.filter_by(signature_hash=signature_from_form).first()
+            if real_sertifikat:
+                verified_data = real_sertifikat
+            else:
+                flash('PERINGATAN: Tanda tangan digital valid, tetapi tidak terdaftar di sistem kami.', 'warning')
+
+        return verification_result, verified_data
+    except Exception as e:
+        flash(f'Error verifikasi manual: {e}', 'danger')
+        return "MANUAL_ERROR", None
+
 @public_bp.route('/verify', methods=['GET', 'POST'])
 def verify_certificate():
     form = VerifyCertificateForm()
@@ -99,111 +198,10 @@ def verify_certificate():
             flash('Kunci publik tidak dapat dimuat. Verifikasi tidak dapat dilanjutkan.', 'danger')
             return render_template('public/verify_certificate.html', title='Verifikasi Sertifikat', form=form)
 
-        # --- WORKFLOW OCR/QR ---
         if form.pdf_file_upload.data:
-            try:
-                file_storage = request.files[form.pdf_file_upload.name]
-                filename = file_storage.filename.lower()
-                file_bytes = file_storage.read()
-
-                if filename.endswith('.pdf'):
-                    images = extract_images_from_pdf(file_bytes)
-                    if not images:
-                        raise ValueError("Gagal mengekstrak gambar dari PDF.")
-                    pil_img = images[0]
-                elif filename.endswith(('.jpg', '.jpeg', '.png')):
-                    from PIL import Image
-                    import io
-                    pil_img = Image.open(io.BytesIO(file_bytes))
-                else:
-                    raise ValueError("Format file tidak didukung.")
-
-                with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_img:
-                    compress_image_pil(pil_img, tmp_img.name)
-                    compressed_path = tmp_img.name
-
-                # OCR & parsing field
-                api_key = current_app.config.get('OCR_SPACE_API_KEY', None)
-                if not api_key:
-                    raise ValueError("API key OCR belum diatur.")
-                ocr_fields = ocr_and_parse(compressed_path, api_key)
-                if not ocr_fields:
-                    raise ValueError("Gagal membaca field sertifikat dari gambar (OCR).")
-
-                # QR code signature
-                signature_from_qr = read_qr_signature(compressed_path)
-                if not signature_from_qr:
-                    raise ValueError("QR Code tidak ditemukan pada gambar sertifikat.")
-
-                # Bangun objek sertifikat tiruan dari hasil OCR
-                class MockSertifikat: pass
-                mock_sertifikat_obj = MockSertifikat()
-                mock_sertifikat_obj.id_sertifikat = normalize_id_sertifikat(ocr_fields.get('id_sertifikat'))
-                mock_sertifikat_obj.spesialis = ocr_fields.get('spesialis')
-                
-                # Normalisasi tanggal terbit hasil OCR ke YYYY-MM-DD
-                tgl_ocr = ocr_fields.get('tanggal_terbit')
-                if tgl_ocr:
-                    try:
-                        tgl_obj = datetime.strptime(tgl_ocr.strip(), '%d %B %Y')
-                        mock_sertifikat_obj.tanggal_terbit = tgl_obj.strftime('%Y-%m-%d')
-                    except Exception:
-                        mock_sertifikat_obj.tanggal_terbit = tgl_ocr
-                else:
-                    mock_sertifikat_obj.tanggal_terbit = tgl_ocr
-                
-                mock_sertifikat_obj.penandatangan = ocr_fields.get('penandatangan')
-                mock_sertifikat_obj.pemilik = type('MockUser', (object,), {'nama_lengkap': ocr_fields.get('nama')})()
-
-                # Verifikasi signature
-                data_string = create_data_string(mock_sertifikat_obj)
-                print("=== DEBUG DATA STRING OCR ===")
-                print(repr(data_string))
-                print("=== DEBUG SIGNATURE QR ===")
-                print(repr(signature_from_qr))
-                is_valid = verify_data(data_string, signature_from_qr, public_key_obj)
-                verification_result = "VALID" if is_valid else "TIDAK VALID"
-                if is_valid:
-                    flash('Verifikasi Berhasil: Data OCR dan tanda tangan digital VALID.', 'success')
-                    real_sertifikat = Sertifikat.query.filter_by(signature_hash=signature_from_qr).first()
-                    if real_sertifikat:
-                        verified_data = real_sertifikat
-                    else:
-                        flash('PERINGATAN: Tanda tangan digital valid, tetapi tidak terdaftar di sistem kami.', 'warning')
-                else:
-                    flash('Verifikasi Gagal: Data OCR dan signature tidak cocok.', 'danger')
-            except Exception as e:
-                flash(f'Error saat memproses PDF/OCR: {e}', 'danger')
-                verification_result = "TIDAK VALID"
-
-        # Alur B: Verifikasi Manual
+            verification_result, verified_data = verify_with_ocr(request.files[form.pdf_file_upload.name], public_key_obj)
         elif form.id_sertifikat.data and form.qr_content.data:
-            try:
-                class MockSertifikat:
-                    pass
-                mock_sertifikat_obj = MockSertifikat()
-                mock_sertifikat_obj.id_sertifikat = form.id_sertifikat.data
-                mock_sertifikat_obj.spesialis = form.spesialis.data
-                mock_sertifikat_obj.tanggal_terbit = form.tanggal_terbit.data
-                mock_sertifikat_obj.penandatangan = form.penandatangan.data
-                mock_sertifikat_obj.pemilik = type('MockUser', (object,), {'nama_lengkap': form.nama_penerima.data})()
-
-                data_string = create_data_string(mock_sertifikat_obj)
-                signature_from_form = form.qr_content.data
-                is_valid = verify_data(data_string, signature_from_form, public_key_obj)
-
-                verification_result = "VALID" if is_valid else "TIDAK VALID"
-                flash(f'Hasil verifikasi manual: Sertifikat {verification_result}.', 'success' if is_valid else 'danger')
-
-                if is_valid:
-                    real_sertifikat = Sertifikat.query.filter_by(signature_hash=signature_from_form).first()
-                    if real_sertifikat:
-                        verified_data = real_sertifikat
-                    else:
-                        flash('PERINGATAN: Tanda tangan digital valid, tetapi tidak terdaftar di sistem kami.', 'warning')
-            except Exception as e:
-                flash(f'Error verifikasi manual: {e}', 'danger')
-                verification_result = "MANUAL_ERROR"
+            verification_result, verified_data = verify_manually(form, public_key_obj)
         else:
             flash('Harap unggah file PDF atau isi semua field manual dengan lengkap.', 'warning')
 

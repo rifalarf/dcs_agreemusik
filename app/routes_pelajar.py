@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, send_file, current_app, request
 from flask_login import login_required, current_user
 from .models import Sertifikat, User
-from .forms import ProfileForm
+from .forms import UserForm
 from . import db
+from .utils.views import serve_pdf
 import os
 
 pelajar_bp = Blueprint('pelajar', __name__, url_prefix='/pelajar')
@@ -44,34 +45,13 @@ def cetak_sertifikat_pelajar(sertifikat_id):
     Menyajikan file PDF sertifikat yang sudah ada untuk pelajar yang bersangkutan.
     """
     sertifikat = Sertifikat.query.get_or_404(sertifikat_id)
-
-    # Otorisasi: Pastikan pelajar hanya bisa melihat sertifikat miliknya sendiri
-    if sertifikat.user_id != current_user.id:
-        flash('Anda tidak memiliki izin untuk mengakses sertifikat ini.', 'danger')
-        return redirect(url_for('pelajar.dashboard'))
-
-    # Periksa apakah path file PDF ada dan file-nya benar-benar ada di server
-    if sertifikat.pdf_file_path and os.path.exists(sertifikat.pdf_file_path):
-        try:
-            return send_file(
-                sertifikat.pdf_file_path,
-                as_attachment=False,  # Tampilkan di browser, jangan langsung download
-                download_name=f'Sertifikat_{sertifikat.id_sertifikat.replace("/", "_")}.pdf',
-                mimetype='application/pdf'
-            )
-        except Exception as e:
-            current_app.logger.error(f"Gagal mengirim file PDF untuk pelajar: {e}")
-            flash('Terjadi kesalahan saat mencoba menampilkan PDF.', 'danger')
-            return redirect(url_for('pelajar.dashboard'))
-    else:
-        flash('File PDF untuk sertifikat ini tidak ditemukan. Silakan hubungi admin.', 'warning')
-        return redirect(url_for('pelajar.dashboard'))
+    return serve_pdf(sertifikat, current_user)
 
 @pelajar_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
     """Menampilkan form dan memproses pembaruan profil pelajar."""
-    form = ProfileForm(original_username=current_user.username, original_email=current_user.email)
+    form = UserForm(original_username=current_user.username, original_email=current_user.email)
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.email = form.email.data
